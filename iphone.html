@@ -5,9 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FaceMesh Debugging</title>
     <!-- קישור לספריית Mediapipe -->
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -50,8 +49,8 @@
             }
         }
 
-        // הגדרת FaceMesh
-        const faceMesh = new FaceMesh({
+        // הפעלת FaceMesh מהספריה העדכנית
+        const faceMesh = new FaceMesh.FaceMesh({
             locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`,
         });
 
@@ -64,7 +63,7 @@
 
         faceMesh.onResults(onResults);
 
-        // הפעלת המצלמה ו-FaceMesh
+        // Camera Utils לשימוש עם FaceMesh
         const camera = new Camera(videoElement, {
             onFrame: async () => {
                 console.log("Sending frame to FaceMesh...");
