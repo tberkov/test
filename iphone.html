@@ -32,8 +32,8 @@
 
         #gazeDot {
             position: absolute;
-            width: 15px;
-            height: 15px;
+            width: 20px;
+            height: 20px;
             background-color: blue;
             border-radius: 50%;
             display: none;
@@ -75,7 +75,7 @@
     <script>
         let initialized = false;
         let gazeDataBuffer = [];
-        const bufferSize = 10; // Buffer size for gaze smoothing
+        const bufferSize = 20; // Buffer size for gaze smoothing - הגדלנו את הבופר
         let focusTime = {}; // Tracks how long gaze has been focused on each button
 
         // Function to trigger voice output
@@ -186,15 +186,15 @@
         // Update the location of the gaze dot
         function updateGazeDot(x, y) {
             const gazeDot = document.getElementById('gazeDot');
-            gazeDot.style.left = `${x - 7}px`;  // Center the dot
-            gazeDot.style.top = `${y - 7}px`;
+            gazeDot.style.left = `${x - 10}px`;  // Center the dot
+            gazeDot.style.top = `${y - 10}px`;
         }
 
         // Check if gaze is focused on a button for at least 0.5 seconds
         function checkFocus(x, y, buttonId, speechText) {
             const button = document.getElementById(buttonId);
             const rect = button.getBoundingClientRect();
-            const padding = 30; // Increase padding for more lenient focus area
+            const padding = 50; // Increase padding for more lenient focus area
 
             if (
                 x > rect.left - padding &&
