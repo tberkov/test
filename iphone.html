@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simple Gaze Tracking</title>
+    <title>Simple Gaze Tracking with Debugging</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -31,9 +31,16 @@
     <button id="yes-btn" class="button">Yes</button>
     <button id="no-btn" class="button">No</button>
 
+    <!-- Area for showing debug messages -->
+    <div id="debug-info" style="font-size: 4vw; margin-top: 30px;"></div>
+
     <script src="https://api.gazecloud.com/CloudEye.js"></script>
     <script>
         window.onload = function () {
+            // Display debug information
+            const debugInfo = document.getElementById('debug-info');
+            debugInfo.textContent = "Initializing gaze tracking...";
+
             // Start gaze tracking
             GazeCloudAPI.StartEyeTracking();
 
@@ -42,7 +49,8 @@
                     const x = GazeData.docX; // Gaze horizontal position
                     const y = GazeData.docY; // Gaze vertical position
 
-                    console.log(`X: ${x}, Y: ${y}`);
+                    // Update the debug info with the gaze coordinates
+                    debugInfo.textContent = `Gaze Coordinates - X: ${x.toFixed(2)}, Y: ${y.toFixed(2)}`;
 
                     // Check if the gaze is on the 'Yes' button
                     const yesBtn = document.getElementById('yes-btn');
@@ -65,9 +73,19 @@
                         noBtn.style.backgroundColor = 'lightcoral';
                     }
                 } else {
-                    console.log("No gaze data available");
+                    // No gaze data available
+                    debugInfo.textContent = "No gaze data available.";
                 }
             };
+
+            // Handle any potential errors in camera access
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then(function (stream) {
+                    debugInfo.textContent += " Camera is working!";
+                })
+                .catch(function (error) {
+                    debugInfo.textContent += ` Camera error: ${error.message}`;
+                });
         };
     </script>
 </body>
