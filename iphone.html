@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FaceMesh Eye Tracking</title>
+    <title>FaceMesh with Camera</title>
     <!-- קישור לספריית Mediapipe -->
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils"></script>
@@ -34,7 +34,7 @@
     </style>
 </head>
 <body>
-    <h1>FaceMesh Eye Tracking</h1>
+    <h1>FaceMesh with Camera</h1>
     <div id="container">
         <video id="video" autoplay></video>
         <div id="gazeDot"></div>
@@ -47,7 +47,6 @@
         // הפעלת המצלמה
         async function startVideo() {
             try {
-                console.log("Trying to access camera...");
                 const stream = await navigator.mediaDevices.getUserMedia({ video: true });
                 videoElement.srcObject = stream;
                 console.log("Camera is running.");
@@ -74,7 +73,6 @@
         // Camera Utils לשימוש עם FaceMesh
         const camera = new Camera(videoElement, {
             onFrame: async () => {
-                console.log("Sending frame to FaceMesh...");
                 await faceMesh.send({ image: videoElement });
             },
             width: 640,
@@ -84,7 +82,6 @@
         // פונקציה לטיפול בתוצאות של FaceMesh
         function onResults(results) {
             if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
-                console.log("FaceMesh results received.");
                 const landmarks = results.multiFaceLandmarks[0];
                 const leftEye = landmarks[468];
                 const rightEye = landmarks[473];
@@ -98,8 +95,6 @@
                 // עדכון מיקום הנקודה האדומה לפי המבט
                 gazeDot.style.left = `${gazeX - 7}px`;
                 gazeDot.style.top = `${gazeY - 7}px`;
-            } else {
-                console.log("No face landmarks detected.");
             }
         }
 
