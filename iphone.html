@@ -3,214 +3,98 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gaze-based Selection</title>
-    <script src="https://webgazer.cs.brown.edu/webgazer.js"></script>
+    <title>FaceMesh Gaze Tracking</title>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/facemesh"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
             text-align: center;
             padding: 20px;
         }
-
-        .focusButton {
-            width: 80%;
-            height: 100px;
-            background-color: #4CAF50;
-            color: white;
-            font-size: 20px;
-            border: none;
-            margin: 20px auto;
-            text-align: center;
-            line-height: 100px;
-            border-radius: 15px;
-            display: none;
+        #output {
+            position: relative;
+            display: inline-block;
         }
-
-        #noButton {
-            background-color: #F44336;
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
         }
-
         #gazeDot {
             position: absolute;
-            width: 20px;
-            height: 20px;
-            background-color: blue;
+            width: 15px;
+            height: 15px;
+            background-color: red;
             border-radius: 50%;
-            display: none;
-        }
-
-        /* שינוי תצוגת המצלמה */
-        video#webgazerVideoFeed {
-            position: fixed;
-            bottom: 10px;
-            right: 10px;
-            width: 100px;
-            height: 80px;
-            opacity: 0.5;
-            display: none; /* אם אתה רוצה להסתיר את המצלמה לגמרי */
-        }
-
-        /* התאמת הממשק למכשירי נייד */
-        @media only screen and (max-width: 600px) {
-            .focusButton {
-                height: 80px;
-                font-size: 18px;
-                line-height: 80px;
-            }
         }
     </style>
 </head>
 <body>
-    <h1>Gaze-based Selection</h1>
-    <p>Click the button to start calibration:</p>
-    <button id="startButton" onclick="initializeSystem()">Start Calibration</button>
-
-    <div id="yesButton" class="focusButton" onclick="speak('Yes')">Yes</div>
-    <div id="noButton" class="focusButton" onclick="speak('No')" style="background-color: #F44336;">No</div>
-    
+    <h1>FaceMesh Gaze Tracking</h1>
+    <div id="output">
+        <video id="video" width="640" height="480" autoplay></video>
+        <canvas id="canvas" width="640" height="480"></canvas>
+    </div>
     <div id="gazeDot"></div>
 
-    <video id="webgazerVideoFeed" autoplay></video> <!-- תצוגת הווידאו מהמצלמה -->
-
     <script>
-        let initialized = false;
-        let gazeDataBuffer = [];
-        const bufferSize = 20; // Buffer size for gaze smoothing - הגדלנו את הבופר
-        let focusTime = {}; // Tracks how long gaze has been focused on each button
+        const videoElement = document.getElementById('video');
+        const canvasElement = document.getElementById('canvas');
+        const canvasCtx = canvasElement.getContext('2d');
+        const gazeDot = document.getElementById('gazeDot');
 
-        // Function to trigger voice output
-        function speak(text) {
-            console.log("Attempting to speak:", text); // Debugging check
-            const msg = new SpeechSynthesisUtterance(text);
-            msg.lang = 'en-US';  // Set language to English (US)
-            window.speechSynthesis.speak(msg);
+        async function startVideo() {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            videoElement.srcObject = stream;
         }
 
-        // Initialize system and check camera access
-        function initializeSystem() {
-            if (!initialized) {
-                console.log("Initializing system...");
+        // הגדרת FaceMesh
+        const faceMesh = new FaceMesh({
+            locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/facemesh/${file}`,
+        });
 
-                // בדוק אם WebGazer נטען
-                if (typeof webgazer === "undefined") {
-                    alert("WebGazer failed to load. Please check the script source.");
-                    return;
-                }
+        faceMesh.setOptions({
+            maxNumFaces: 1,
+            refineLandmarks: true,
+            minDetectionConfidence: 0.5,
+            minTrackingConfidence: 0.5,
+        });
 
-                // בקשת גישה למצלמה
-                requestCameraAccess()
-                    .then(() => {
-                        console.log("Camera access granted. Starting WebGazer...");
-                        startWebGazer(); // הפעלת WebGazer לאחר גישת מצלמה
-                    })
-                    .catch((err) => {
-                        console.error("Camera access error:", err);
-                        alert("Failed to access camera. Check permissions.");
-                    });
-            }
-        }
+        faceMesh.onResults(onResults);
 
-        // בקשת גישה למצלמה
-        function requestCameraAccess() {
-            return navigator.mediaDevices.getUserMedia({ video: true });
-        }
+        const camera = new Camera(videoElement, {
+            onFrame: async () => {
+                await faceMesh.send({ image: videoElement });
+            },
+            width: 640,
+            height: 480,
+        });
+        camera.start();
 
-        // הפעלת WebGazer עם tracker TFFacemesh
-        function startWebGazer() {
-            try {
-                webgazer.setRegression('ridge')
-                        .setTracker('TFFacemesh')  // השתמש ב-TFFacemesh במקום clmtrackr
-                        .begin();
+        function onResults(results) {
+            if (results.multiFaceLandmarks.length > 0) {
+                canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
 
-                // הסתירו את הווידאו לאחר הפעלה (אם יש צורך)
-                document.getElementById('webgazerVideoFeed').style.display = 'none';
+                const landmarks = results.multiFaceLandmarks[0];
+                drawConnectors(canvasCtx, landmarks, FACEMESH_TESSELATION, { color: '#C0C0C070', lineWidth: 1 });
+                drawLandmarks(canvasCtx, landmarks, { color: '#FF3030', lineWidth: 2 });
 
-                console.log("WebGazer started with TFFacemesh tracker.");
+                // נתוני עיניים - החלקים 468, 473 הם מיקום עיניים שמאל וימין
+                const leftEye = landmarks[468];
+                const rightEye = landmarks[473];
 
-                initialized = true;
-                document.getElementById('startButton').style.display = 'none';
-                startCalibration(); // הפעלת הכיול
-            } catch (error) {
-                console.error("Error initializing WebGazer:", error);
-                alert("Failed to initialize WebGazer. Please check camera permissions.");
-            }
-        }
+                const avgX = (leftEye.x + rightEye.x) / 2;
+                const avgY = (leftEye.y + rightEye.y) / 2;
 
-        // Start simple calibration
-        function startCalibration() {
-            console.log("Calibration started.");
-            document.getElementById('yesButton').style.display = 'inline-block';
-            document.getElementById('noButton').style.display = 'inline-block';
-            document.getElementById('gazeDot').style.display = 'block';
-            startTracking(); // Begin gaze tracking
-        }
+                // המרת מיקום העיניים למיקום על המסך
+                const gazeX = avgX * canvasElement.width;
+                const gazeY = avgY * canvasElement.height;
 
-        // Add gaze data to the buffer
-        function addGazeData(x, y) {
-            gazeDataBuffer.push({ x: x, y: y });
-            if (gazeDataBuffer.length > bufferSize) {
-                gazeDataBuffer.shift(); // Remove oldest data point
-            }
-        }
-
-        // Get the average gaze point for smoothing
-        function getAveragedGaze() {
-            let sumX = 0;
-            let sumY = 0;
-            gazeDataBuffer.forEach(point => {
-                sumX += point.x;
-                sumY += point.y;
-            });
-            return {
-                x: sumX / gazeDataBuffer.length,
-                y: sumY / gazeDataBuffer.length
-            };
-        }
-
-        // Start tracking gaze
-        function startTracking() {
-            webgazer.setGazeListener((data, elapsedTime) => {
-                if (data == null) return;
-                addGazeData(data.x, data.y);
-
-                const averagedGaze = getAveragedGaze();
-                updateGazeDot(averagedGaze.x, averagedGaze.y);
-
-                console.log(`Gaze Data: X=${averagedGaze.x}, Y=${averagedGaze.y}`); // Debugging
-
-                checkFocus(averagedGaze.x, averagedGaze.y, 'yesButton', 'Yes');
-                checkFocus(averagedGaze.x, averagedGaze.y, 'noButton', 'No');
-            }).begin();
-        }
-
-        // Update the location of the gaze dot
-        function updateGazeDot(x, y) {
-            const gazeDot = document.getElementById('gazeDot');
-            gazeDot.style.left = `${x - 10}px`;  // Center the dot
-            gazeDot.style.top = `${y - 10}px`;
-        }
-
-        // Check if gaze is focused on a button for at least 0.5 seconds
-        function checkFocus(x, y, buttonId, speechText) {
-            const button = document.getElementById(buttonId);
-            const rect = button.getBoundingClientRect();
-            const padding = 50; // Increase padding for more lenient focus area
-
-            if (
-                x > rect.left - padding &&
-                x < rect.right + padding &&
-                y > rect.top - padding &&
-                y < rect.bottom + padding
-            ) {
-                if (!focusTime[buttonId]) {
-                    focusTime[buttonId] = Date.now();
-                } else if (Date.now() - focusTime[buttonId] > 500) {
-                    // אם המבט ממוקד יותר מ-0.5 שניות, תופעל הפלט
-                    speak(speechText);
-                    focusTime[buttonId] = null; // Reset the timer after speaking
-                }
-            } else {
-                focusTime[buttonId] = null; // Reset the timer if gaze moves away
+                // עדכון מיקום הנקודה האדומה לפי המבט
+                gazeDot.style.left = `${gazeX - 7}px`;
+                gazeDot.style.top = `${gazeY - 7}px`;
             }
         }
     </script>
