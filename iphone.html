@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Correct FaceMesh Usage</title>
-    <!-- קישור לספריית Mediapipe -->
+    <title>FaceMesh Eye Tracking</title>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
     <style>
@@ -18,14 +17,31 @@
             height: 480px;
             border: 1px solid black;
         }
+        #gazeDot {
+            position: absolute;
+            width: 15px;
+            height: 15px;
+            background-color: red;
+            border-radius: 50%;
+        }
+        #container {
+            position: relative;
+            width: 640px;
+            height: 480px;
+            margin: 0 auto;
+        }
     </style>
 </head>
 <body>
-    <h1>FaceMesh Correct Example</h1>
-    <video id="video" autoplay></video>
+    <h1>FaceMesh Eye Tracking</h1>
+    <div id="container">
+        <video id="video" autoplay></video>
+        <div id="gazeDot"></div>
+    </div>
 
     <script>
         const videoElement = document.getElementById('video');
+        const gazeDot = document.getElementById('gazeDot');
 
         async function startCamera() {
             try {
@@ -38,7 +54,7 @@
             }
         }
 
-        // יצירת אובייקט של FaceMesh בצורה נכונה
+        // יצירת אובייקט FaceMesh
         const faceMesh = new FaceMesh({
             locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`,
         });
@@ -51,14 +67,25 @@
         });
 
         faceMesh.onResults((results) => {
-            if (results.multiFaceLandmarks) {
-                console.log("Face landmarks detected.");
-            } else {
-                console.log("No landmarks detected.");
+            if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
+                const landmarks = results.multiFaceLandmarks[0];
+                const leftEye = landmarks[468]; // נקודת עין שמאל
+                const rightEye = landmarks[473]; // נקודת עין ימין
+
+                const avgX = (leftEye.x + rightEye.x) / 2;
+                const avgY = (leftEye.y + rightEye.y) / 2;
+
+                // המרת מיקום העיניים למיקום על המסך
+                const gazeX = avgX * videoElement.offsetWidth;
+                const gazeY = avgY * videoElement.offsetHeight;
+
+                // עדכון מיקום הנקודה האדומה בהתאם למיקום המבט
+                gazeDot.style.left = `${gazeX - 7}px`;
+                gazeDot.style.top = `${gazeY - 7}px`;
             }
         });
 
-        // שימוש ב-Camera Utils
+        // שימוש ב-Camera Utils כדי להפעיל את FaceMesh על כל פריים וידאו
         const camera = new Camera(videoElement, {
             onFrame: async () => {
                 await faceMesh.send({ image: videoElement });
