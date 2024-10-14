@@ -4,8 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Camera and FaceMesh Debugging</title>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/facemesh"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils"></script>
+    <!-- קישור לספריית Mediapipe הנכונה -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -56,8 +57,8 @@
         }
 
         // הגדרת FaceMesh
-        const faceMesh = new FaceMesh({
-            locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/facemesh/${file}`,
+        const faceMesh = new FaceMesh.FaceMesh({
+            locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`,
         });
 
         faceMesh.setOptions({
