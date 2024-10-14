@@ -89,15 +89,15 @@
             return navigator.mediaDevices.getUserMedia({ video: true });
         }
 
-        // הפעלת WebGazer
+        // הפעלת WebGazer עם tracker TFFacemesh
         function startWebGazer() {
             try {
                 webgazer.setRegression('ridge')
-                        .setTracker('clmtrackr')
+                        .setTracker('TFFacemesh')  // השתמש ב-TFFacemesh במקום clmtrackr
                         .begin()
                         .showPredictionPoints(true); // Show gaze prediction points for debugging
 
-                console.log("WebGazer started.");
+                console.log("WebGazer started with TFFacemesh tracker.");
 
                 initialized = true;
                 document.getElementById('startButton').style.display = 'none';
