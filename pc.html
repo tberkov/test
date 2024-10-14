@@ -1,70 +1,88 @@
-import cv2
-import mediapipe as mp
-import numpy as np
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eye Gaze Tracking</title>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 0;
+            margin: 0;
+            overflow: hidden;
+        }
+        video {
+            width: 640px;
+            height: 480px;
+        }
+        #gazeDot {
+            position: absolute;
+            width: 15px;
+            height: 15px;
+            background-color: red;
+            border-radius: 50%;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body>
+    <video id="video" autoplay playsinline></video>
+    <div id="gazeDot"></div>
 
-# הגדרות MediaPipe ו-OpenCV
-mp_face_mesh = mp.solutions.face_mesh
-face_mesh = mp_face_mesh.FaceMesh(refine_landmarks=True)
-mp_drawing = mp.solutions.drawing_utils
+    <script>
+        const videoElement = document.getElementById('video');
+        const gazeDot = document.getElementById('gazeDot');
 
-# מודל 3D
-model_points = np.array([
-    (0.0, 0.0, 0.0),             # אף
-    (0.0, -330.0, -65.0),         # סנטר
-    (-225.0, 170.0, -135.0),      # עין שמאל
-    (225.0, 170.0, -135.0),       # עין ימין
-    (-150.0, -150.0, -125.0),     # פה שמאל
-    (150.0, -150.0, -125.0)       # פה ימין
-])
+        // Load MediaPipe FaceMesh
+        const faceMesh = new FaceMesh({
+            locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`,
+        });
 
-# הגדרת מצלמה
-cap = cv2.VideoCapture(0)
+        faceMesh.setOptions({
+            maxNumFaces: 1,
+            refineLandmarks: true,
+            minDetectionConfidence: 0.5,
+            minTrackingConfidence: 0.5,
+        });
 
-while cap.isOpened():
-    ret, frame = cap.read()
-    if not ret:
-        break
+        faceMesh.onResults((results) => {
+            if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
+                const landmarks = results.multiFaceLandmarks[0];
 
-    frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-    results = face_mesh.process(frame_rgb)
+                // Example of landmark indices for eyes
+                const leftEye = landmarks[159]; // Example for left eye landmark
+                const rightEye = landmarks[386]; // Example for right eye landmark
 
-    if results.multi_face_landmarks:
-        for face_landmarks in results.multi_face_landmarks:
-            img_points = np.array([
-                (face_landmarks.landmark[1].x, face_landmarks.landmark[1].y),  # אף
-                (face_landmarks.landmark[152].x, face_landmarks.landmark[152].y),  # סנטר
-                (face_landmarks.landmark[33].x, face_landmarks.landmark[33].y),  # עין שמאל
-                (face_landmarks.landmark[263].x, face_landmarks.landmark[263].y),  # עין ימין
-                (face_landmarks.landmark[61].x, face_landmarks.landmark[61].y),  # פה שמאל
-                (face_landmarks.landmark[291].x, face_landmarks.landmark[291].y)   # פה ימין
-            ], dtype="double")
+                // Convert landmarks to pixel coordinates
+                const leftEyeX = leftEye.x * window.innerWidth;
+                const leftEyeY = leftEye.y * window.innerHeight;
 
-            # שימוש ב-solvePnP
-            focal_length = frame.shape[1]
-            center = (frame.shape[1] / 2, frame.shape[0] / 2)
-            camera_matrix = np.array([
-                [focal_length, 0, center[0]],
-                [0, focal_length, center[1]],
-                [0, 0, 1]
-            ], dtype="double")
+                const rightEyeX = rightEye.x * window.innerWidth;
+                const rightEyeY = rightEye.y * window.innerHeight;
 
-            dist_coeffs = np.zeros((4, 1))  # הנחת עדשה ללא עיוות
-            success, rotation_vector, translation_vector = cv2.solvePnP(
-                model_points, img_points, camera_matrix, dist_coeffs)
+                // Place the gaze dot at the middle of both eyes as an approximation
+                const gazeX = (leftEyeX + rightEyeX) / 2;
+                const gazeY = (leftEyeY + rightEyeY) / 2;
 
-            # הקרנת נקודות המבט לתלת-ממד
-            (nose_end_point2D, jacobian) = cv2.projectPoints(
-                np.array([(0.0, 0.0, 1000.0)]), rotation_vector, translation_vector, camera_matrix, dist_coeffs)
+                // Update the position of the gaze dot
+                gazeDot.style.left = `${gazeX - 7}px`;
+                gazeDot.style.top = `${gazeY - 7}px`;
+            }
+        });
 
-            # ציור כיוון המבט
-            p1 = (int(img_points[0][0]), int(img_points[0][1]))
-            p2 = (int(nose_end_point2D[0][0][0]), int(nose_end_point2D[0][0][1]))
-            cv2.line(frame, p1, p2, (0, 255, 255), 2)
+        // Start the camera and run the face mesh model on every frame
+        const camera = new Camera(videoElement, {
+            onFrame: async () => {
+                await faceMesh.send({ image: videoElement });
+            },
+            width: 640,
+            height: 480
+        });
 
-    cv2.imshow('Eye Gaze Estimation', frame)
-
-    if cv2.waitKey(5) & 0xFF == 27:
-        break
-
-cap.release()
-cv2.destroyAllWindows()
+        camera.start();
+    </script>
+</body>
+</html>
