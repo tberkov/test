@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, orientation=landscape">
     <title>FaceMesh Nose Tracking with Buttons</title>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
@@ -40,9 +40,9 @@
         }
         .button {
             position: absolute;
-            width: 50vw; /* שימוש באחוזי רוחב כדי להתאים למסכים קטנים */
-            height: 15vw; /* הגברת הגובה של הכפתורים */
-            font-size: 5vw; /* גודל טקסט שיתאים למסכים קטנים */
+            width: 40vw; /* שימוש באחוזי רוחב כדי להתאים למסכים בתצוגה רוחבית */
+            height: 20vh; /* הגברת הגובה של הכפתורים לפי גובה המסך */
+            font-size: 5vw; /* גודל טקסט שיתאים לתצוגה רוחבית */
             border: none;
             cursor: pointer;
             z-index: 1;
@@ -53,14 +53,14 @@
         #yesButton {
             background-color: green;
             color: white;
-            top: 40%; /* מיקום הכפתור הראשון מעל השני */
+            top: 30%; /* מיקום הכפתור הראשון */
             left: 50%;
             transform: translate(-50%, -50%);
         }
         #noButton {
             background-color: red;
             color: white;
-            top: 60%; /* מיקום הכפתור השני מתחת לראשון */
+            top: 60%; /* מיקום הכפתור השני */
             left: 50%;
             transform: translate(-50%, -50%);
         }
