@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FaceMesh Eye Tracking with Buttons</title>
+    <title>FaceMesh Nose Tracking with Buttons</title>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
     <style>
@@ -21,10 +21,13 @@
         }
         video {
             position: absolute;
-            width: 100vw;
-            height: 100vh;
+            width: 160px; /* גודל קטן של חלון המצלמה */
+            height: 120px;
             object-fit: cover;
+            bottom: 10px;
+            right: 10px;
             z-index: 0;
+            opacity: 0.6; /* שקיפות המצלמה */
         }
         #gazeDot {
             position: absolute;
@@ -45,12 +48,14 @@
             z-index: 1;
         }
         #yesButton {
-            bottom: 10%;
-            left: 20%;
+            top: 50%;
+            left: 40%;
+            transform: translate(-50%, -50%);
         }
         #noButton {
-            bottom: 10%;
-            right: 20%;
+            top: 50%;
+            left: 60%;
+            transform: translate(-50%, -50%);
         }
     </style>
 </head>
@@ -98,21 +103,16 @@
         faceMesh.onResults((results) => {
             if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
                 const landmarks = results.multiFaceLandmarks[0];
-                const leftEye = landmarks[468]; // נקודת עין שמאל
-                const rightEye = landmarks[473]; // נקודת עין ימין
+                const nose = landmarks[1]; // נקודת האף
 
-                const avgX = (leftEye.x + rightEye.x) / 2;
-                const avgY = (leftEye.y + rightEye.y) / 2;
+                const noseX = nose.x * window.innerWidth;
+                const noseY = nose.y * window.innerHeight;
 
-                // המרת מיקום העיניים למיקום על המסך
-                const gazeX = avgX * window.innerWidth;
-                const gazeY = avgY * window.innerHeight;
+                // עדכון מיקום הנקודה האדומה בהתאם למיקום האף
+                gazeDot.style.left = `${noseX - 7}px`;
+                gazeDot.style.top = `${noseY - 7}px`;
 
-                // עדכון מיקום הנקודה האדומה בהתאם למיקום המבט
-                gazeDot.style.left = `${gazeX - 7}px`;
-                gazeDot.style.top = `${gazeY - 7}px`;
-
-                checkFocus(gazeX, gazeY);
+                checkFocus(noseX, noseY);
             }
         });
 
@@ -156,9 +156,9 @@
         // פונקציה להפעלת הכפתור (פלט קולי)
         function triggerButton(button) {
             if (button === 'yes') {
-                speak('You selected yes');
+                speak('Yes');
             } else if (button === 'no') {
-                speak('You selected no');
+                speak('No');
             }
         }
 
