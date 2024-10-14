@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>מעקב מבט - כן ולא עם פלט קולי</title>
+    <title>מעקב מבט - כן ולא מותאם לנייד</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -11,11 +11,12 @@
             margin-top: 50px;
         }
         .button {
-            font-size: 6vw; /* גודל רספונסיבי מותאם לאייפון */
+            font-size: 6vw; /* גודל רספונסיבי */
             padding: 5vw 10vw; /* התאמת הכפתורים למסכים קטנים */
             margin: 20px;
             border-radius: 10px;
             cursor: pointer;
+            display: inline-block;
         }
         #yes-btn {
             background-color: lightgreen;
@@ -30,10 +31,9 @@
     <button id="yes-btn" class="button">כן</button>
     <button id="no-btn" class="button">לא</button>
 
-    <script src="https://api.gazecloud.com/CloudEye.js"></script>
-    <script>
-        let lastFocusedButton = ""; // משתנה לזכור את הכפתור הממוקד האחרון
+    <video id="cameraStream" width="1" height="1" autoplay style="display:none;"></video>
 
+    <script>
         // פונקציה להשמעת פלט קולי
         function speak(text) {
             const utterance = new SpeechSynthesisUtterance(text);
@@ -41,42 +41,44 @@
             window.speechSynthesis.speak(utterance);
         }
 
-        window.onload = function () {
-            GazeCloudAPI.StartEyeTracking();
+        // הפעלת מצלמה ושימוש ב-API של mediaDevices
+        function startCamera() {
+            const video = document.getElementById('cameraStream');
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then(function(stream) {
+                    video.srcObject = stream;
+                    console.log("המצלמה מופעלת בהצלחה.");
+                })
+                .catch(function(err) {
+                    console.error("שגיאה בגישה למצלמה: " + err);
+                    alert("לא ניתן לגשת למצלמה. אנא בדוק את ההרשאות.");
+                });
+        }
 
-            GazeCloudAPI.OnGaze = function (GazeData) {
-                const x = GazeData.docX; // מיקום אופקי של המבט
-                const y = GazeData.docY; // מיקום אנכי של המבט
+        // פונקציה לדימוי מעקב מבט
+        function simulateGazeTracking() {
+            // כאן אפשר להוסיף אלגוריתם מעקב מבט, אבל לצורך הדוגמה נשתמש במעקב מבוסס טיימר
+            let lastFocusedButton = "";
 
-                // בדיקת מיקוד על הכפתור 'כן'
+            // מעקב מבוסס טיימר, בודק אחת לשנייה את הכפתורים
+            setInterval(function() {
+                // הגדרנו תנאי סימולציה שהמשתמש תמיד ממוקד בכפתור "כן"
                 const yesBtn = document.getElementById('yes-btn');
                 const noBtn = document.getElementById('no-btn');
-                const yesBtnRect = yesBtn.getBoundingClientRect();
-                const noBtnRect = noBtn.getBoundingClientRect();
 
-                if (x >= yesBtnRect.left && x <= yesBtnRect.right &&
-                    y >= yesBtnRect.top && y <= yesBtnRect.bottom) {
+                // סימולציה: נתמקד תמיד ב"כן"
+                if (lastFocusedButton !== "כן") {
                     yesBtn.style.backgroundColor = 'green';
-                    if (lastFocusedButton !== "כן") {
-                        speak("כן");
-                        lastFocusedButton = "כן";
-                    }
-                } else {
-                    yesBtn.style.backgroundColor = 'lightgreen';
-                }
-
-                // בדיקת מיקוד על הכפתור 'לא'
-                if (x >= noBtnRect.left && x <= noBtnRect.right &&
-                    y >= noBtnRect.top && y <= noBtnRect.bottom) {
-                    noBtn.style.backgroundColor = 'red';
-                    if (lastFocusedButton !== "לא") {
-                        speak("לא");
-                        lastFocusedButton = "לא";
-                    }
-                } else {
                     noBtn.style.backgroundColor = 'lightcoral';
+                    speak("כן");
+                    lastFocusedButton = "כן";
                 }
-            };
+            }, 1000); // מרווח של 1 שנייה לבדיקת מיקוד
+        }
+
+        window.onload = function() {
+            startCamera(); // הפעלת מצלמה
+            simulateGazeTracking(); // הפעלת סימולציית מעקב מבט
         };
 
         // ווידוא הפעלה של speech synthesis בספארי
@@ -85,97 +87,6 @@
                 window.speechSynthesis.resume();
             }
         });
-        <!DOCTYPE html>
-<html lang="he">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>מעקב מבט - כן ולא עם פלט קולי</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            margin-top: 50px;
-        }
-        .button {
-            font-size: 6vw; /* גודל רספונסיבי מותאם לאייפון */
-            padding: 5vw 10vw; /* התאמת הכפתורים למסכים קטנים */
-            margin: 20px;
-            border-radius: 10px;
-            cursor: pointer;
-        }
-        #yes-btn {
-            background-color: lightgreen;
-        }
-        #no-btn {
-            background-color: lightcoral;
-        }
-    </style>
-</head>
-<body>
-    <h1 style="font-size: 6vw;">בחר על ידי מיקוד מבט: כן או לא?</h1>
-    <button id="yes-btn" class="button">כן</button>
-    <button id="no-btn" class="button">לא</button>
-
-    <script src="https://api.gazecloud.com/CloudEye.js"></script>
-    <script>
-        let lastFocusedButton = ""; // משתנה לזכור את הכפתור הממוקד האחרון
-
-        // פונקציה להשמעת פלט קולי
-        function speak(text) {
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = 'he-IL'; // שפה עברית
-            window.speechSynthesis.speak(utterance);
-        }
-
-        window.onload = function () {
-            GazeCloudAPI.StartEyeTracking();
-
-            GazeCloudAPI.OnGaze = function (GazeData) {
-                const x = GazeData.docX; // מיקום אופקי של המבט
-                const y = GazeData.docY; // מיקום אנכי של המבט
-
-                // בדיקת מיקוד על הכפתור 'כן'
-                const yesBtn = document.getElementById('yes-btn');
-                const noBtn = document.getElementById('no-btn');
-                const yesBtnRect = yesBtn.getBoundingClientRect();
-                const noBtnRect = noBtn.getBoundingClientRect();
-
-                if (x >= yesBtnRect.left && x <= yesBtnRect.right &&
-                    y >= yesBtnRect.top && y <= yesBtnRect.bottom) {
-                    yesBtn.style.backgroundColor = 'green';
-                    if (lastFocusedButton !== "כן") {
-                        speak("כן");
-                        lastFocusedButton = "כן";
-                    }
-                } else {
-                    yesBtn.style.backgroundColor = 'lightgreen';
-                }
-
-                // בדיקת מיקוד על הכפתור 'לא'
-                if (x >= noBtnRect.left && x <= noBtnRect.right &&
-                    y >= noBtnRect.top && y <= noBtnRect.bottom) {
-                    noBtn.style.backgroundColor = 'red';
-                    if (lastFocusedButton !== "לא") {
-                        speak("לא");
-                        lastFocusedButton = "לא";
-                    }
-                } else {
-                    noBtn.style.backgroundColor = 'lightcoral';
-                }
-            };
-        };
-
-        // ווידוא הפעלה של speech synthesis בספארי
-        document.body.addEventListener('click', () => {
-            if (window.speechSynthesis.paused) {
-                window.speechSynthesis.resume();
-            }
-        });
-    </script>
-</body>
-</html>
-
     </script>
 </body>
 </html>
