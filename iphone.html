@@ -29,15 +29,33 @@
             background-color: red;
             border-radius: 50%;
         }
+        .focusButton {
+            width: 80%;
+            height: 100px;
+            background-color: #4CAF50;
+            color: white;
+            font-size: 20px;
+            border: none;
+            margin: 50px auto; /* הגדלת המרחק בין הכפתורים */
+            text-align: center;
+            line-height: 100px;
+            border-radius: 15px;
+        }
+        #noButton {
+            background-color: #F44336;
+        }
     </style>
 </head>
 <body>
     <h1>FaceMesh Gaze Tracking</h1>
     <div id="output">
-        <video id="video" width="640" height="480" autoplay></video>
+        <video id="video" width="640" height="480" autoplay style="display: none;"></video> <!-- המצלמה מוסתרת -->
         <canvas id="canvas" width="640" height="480"></canvas>
     </div>
     <div id="gazeDot"></div>
+
+    <div id="yesButton" class="focusButton" onclick="speak('Yes')">Yes</div>
+    <div id="noButton" class="focusButton" onclick="speak('No')">No</div>
 
     <script>
         const videoElement = document.getElementById('video');
@@ -96,6 +114,13 @@
                 gazeDot.style.left = `${gazeX - 7}px`;
                 gazeDot.style.top = `${gazeY - 7}px`;
             }
+        }
+
+        // פונקציה לפלט קולי
+        function speak(text) {
+            const msg = new SpeechSynthesisUtterance(text);
+            msg.lang = 'en-US';  // Set language to English (US)
+            window.speechSynthesis.speak(msg);
         }
     </script>
 </body>
