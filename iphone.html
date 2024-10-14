@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FaceMesh Eye Tracking - iPhone</title>
+    <title>FaceMesh Eye Tracking with Buttons</title>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
     <style>
@@ -12,7 +12,7 @@
             text-align: center;
             padding: 0;
             margin: 0;
-            overflow: hidden; /* להימנע מגלילה על המסך */
+            overflow: hidden;
         }
         #container {
             position: relative;
@@ -21,9 +21,9 @@
         }
         video {
             position: absolute;
-            width: 100vw; /* להתאים לרוחב המסך */
-            height: 100vh; /* להתאים לגובה המסך */
-            object-fit: cover; /* התאמה למסך בלי להשאיר שטחים ריקים */
+            width: 100vw;
+            height: 100vh;
+            object-fit: cover;
             z-index: 0;
         }
         #gazeDot {
@@ -34,17 +34,43 @@
             border-radius: 50%;
             z-index: 1;
         }
+        .button {
+            position: absolute;
+            width: 200px;
+            height: 100px;
+            font-size: 24px;
+            background-color: lightblue;
+            border: none;
+            cursor: pointer;
+            z-index: 1;
+        }
+        #yesButton {
+            bottom: 10%;
+            left: 20%;
+        }
+        #noButton {
+            bottom: 10%;
+            right: 20%;
+        }
     </style>
 </head>
 <body>
     <div id="container">
-        <video id="video" autoplay playsinline></video> <!-- playsinline הכרחי באייפון למניעת מסך מלא -->
+        <video id="video" autoplay playsinline></video>
         <div id="gazeDot"></div>
+        <button id="yesButton" class="button">Yes</button>
+        <button id="noButton" class="button">No</button>
     </div>
 
     <script>
         const videoElement = document.getElementById('video');
         const gazeDot = document.getElementById('gazeDot');
+        const yesButton = document.getElementById('yesButton');
+        const noButton = document.getElementById('noButton');
+
+        let gazeFocus = ''; // עבור מעקב המיקוד
+        let focusStartTime = null;
+        const focusDuration = 1000; // משך זמן מיקוד באישון (במילישניות)
 
         async function startCamera() {
             try {
@@ -85,8 +111,63 @@
                 // עדכון מיקום הנקודה האדומה בהתאם למיקום המבט
                 gazeDot.style.left = `${gazeX - 7}px`;
                 gazeDot.style.top = `${gazeY - 7}px`;
+
+                checkFocus(gazeX, gazeY);
             }
         });
+
+        // פונקציה לבדיקה אם המשתמש ממוקד בכפתור מסוים
+        function checkFocus(x, y) {
+            if (isGazeOnButton(x, y, yesButton)) {
+                setFocus('yes');
+            } else if (isGazeOnButton(x, y, noButton)) {
+                setFocus('no');
+            } else {
+                clearFocus();
+            }
+        }
+
+        // פונקציה שבודקת האם המבט ממוקד על כפתור מסוים
+        function isGazeOnButton(gazeX, gazeY, button) {
+            const rect = button.getBoundingClientRect();
+            return gazeX >= rect.left && gazeX <= rect.right && gazeY >= rect.top && gazeY <= rect.bottom;
+        }
+
+        // פונקציה להגדרת המיקוד בכפתור מסוים
+        function setFocus(button) {
+            if (gazeFocus !== button) {
+                gazeFocus = button;
+                focusStartTime = new Date().getTime();
+            } else {
+                const now = new Date().getTime();
+                if (now - focusStartTime >= focusDuration) {
+                    triggerButton(button);
+                    clearFocus();
+                }
+            }
+        }
+
+        // פונקציה לניקוי המיקוד
+        function clearFocus() {
+            gazeFocus = '';
+            focusStartTime = null;
+        }
+
+        // פונקציה להפעלת הכפתור (פלט קולי)
+        function triggerButton(button) {
+            if (button === 'yes') {
+                speak('You selected yes');
+            } else if (button === 'no') {
+                speak('You selected no');
+            }
+        }
+
+        // פונקציה לפלט קולי
+        function speak(text) {
+            const msg = new SpeechSynthesisUtterance(text);
+            msg.lang = 'en-US';
+            window.speechSynthesis.speak(msg);
+        }
 
         // שימוש ב-Camera Utils כדי להפעיל את FaceMesh על כל פריים וידאו
         const camera = new Camera(videoElement, {
