@@ -58,8 +58,11 @@
 
         // Function to trigger voice output
         function speak(text) {
+            console.log("Attempting to speak:", text); // בדיקה לקונסול
             const msg = new SpeechSynthesisUtterance(text);
             msg.lang = 'en-US';  // Set language to English (US)
+            msg.onstart = () => console.log("Speech started:", text);  // בדיקת תחילת הפלט
+            msg.onend = () => console.log("Speech finished:", text);  // בדיקת סיום הפלט
             window.speechSynthesis.speak(msg);
         }
 
