@@ -52,6 +52,9 @@
 
     <script>
         let initialized = false;
+        let gazeDataBuffer = [];
+        const bufferSize = 10; // Buffer size for gaze smoothing
+        let focusTime = {}; // Tracks how long gaze has been focused on each button
 
         // Function to trigger voice output
         function speak(text) {
@@ -116,15 +119,71 @@
             startTracking(); // Begin gaze tracking
         }
 
+        // Add gaze data to the buffer
+        function addGazeData(x, y) {
+            gazeDataBuffer.push({ x: x, y: y });
+            if (gazeDataBuffer.length > bufferSize) {
+                gazeDataBuffer.shift(); // Remove oldest data point
+            }
+        }
+
+        // Get the average gaze point for smoothing
+        function getAveragedGaze() {
+            let sumX = 0;
+            let sumY = 0;
+            gazeDataBuffer.forEach(point => {
+                sumX += point.x;
+                sumY += point.y;
+            });
+            return {
+                x: sumX / gazeDataBuffer.length,
+                y: sumY / gazeDataBuffer.length
+            };
+        }
+
         // Start tracking gaze
         function startTracking() {
             webgazer.setGazeListener((data, elapsedTime) => {
                 if (data == null) return;
-                console.log(`Gaze Data: X=${data.x}, Y=${data.y}`);
-                const gazeDot = document.getElementById('gazeDot');
-                gazeDot.style.left = `${data.x - 7}px`;  // Center the dot
-                gazeDot.style.top = `${data.y - 7}px`;
+                addGazeData(data.x, data.y);
+
+                const averagedGaze = getAveragedGaze();
+                updateGazeDot(averagedGaze.x, averagedGaze.y);
+
+                checkFocus(averagedGaze.x, averagedGaze.y, 'yesButton', 'Yes');
+                checkFocus(averagedGaze.x, averagedGaze.y, 'noButton', 'No');
             }).begin();
+        }
+
+        // Update the location of the gaze dot
+        function updateGazeDot(x, y) {
+            const gazeDot = document.getElementById('gazeDot');
+            gazeDot.style.left = `${x - 7}px`;  // Center the dot
+            gazeDot.style.top = `${y - 7}px`;
+        }
+
+        // Check if gaze is focused on a button for at least 0.5 seconds
+        function checkFocus(x, y, buttonId, speechText) {
+            const button = document.getElementById(buttonId);
+            const rect = button.getBoundingClientRect();
+            const padding = 30; // Increase padding for more lenient focus area
+
+            if (
+                x > rect.left - padding &&
+                x < rect.right + padding &&
+                y > rect.top - padding &&
+                y < rect.bottom + padding
+            ) {
+                if (!focusTime[buttonId]) {
+                    focusTime[buttonId] = Date.now();
+                } else if (Date.now() - focusTime[buttonId] > 500) {
+                    // אם המבט ממוקד יותר מ-0.5 שניות, תופעל הפלט
+                    speak(speechText);
+                    focusTime[buttonId] = null; // Reset the timer after speaking
+                }
+            } else {
+                focusTime[buttonId] = null; // Reset the timer if gaze moves away
+            }
         }
     </script>
 </body>
