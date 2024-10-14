@@ -44,6 +44,16 @@
         #webgazerVideoFeed {
             display: none !important;
         }
+
+        /* חיווי מיקום המבט */
+        #gazeDot {
+            position: absolute;
+            width: 15px;
+            height: 15px;
+            background-color: blue;
+            border-radius: 50%;
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -56,11 +66,14 @@
 
     <!-- Calibration point -->
     <div id="calibrationPoint" class="calibration-point"></div>
+    
+    <!-- Gaze dot חיווי מיקום המבט -->
+    <div id="gazeDot"></div>
 
     <script>
         let initialized = false;
         let gazeDataBuffer = [];
-        const bufferSize = 10; // Number of gaze points to average
+        const bufferSize = 20; // הגדל את גודל הבופר ל-20 נקודות מבט
 
         // Function to trigger voice output
         function speak(text) {
@@ -99,6 +112,7 @@
             setTimeout(() => {
                 document.getElementById('yesButton').style.display = 'inline-block';
                 document.getElementById('noButton').style.display = 'inline-block';
+                document.getElementById('gazeDot').style.display = 'block'; // הצגת החיווי
                 startTracking(); // Begin tracking gaze after calibration
             }, calibrationPoints.length * 3000);
         }
@@ -122,6 +136,8 @@
                 addGazeData(data.x, data.y);
 
                 const averagedGaze = getAveragedGaze();
+                updateGazeDot(averagedGaze.x, averagedGaze.y);  // עדכון מיקום החיווי
+
                 checkFocus(averagedGaze.x, averagedGaze.y, 'yesButton', 'Yes');
                 checkFocus(averagedGaze.x, averagedGaze.y, 'noButton', 'No');
             }).begin();
@@ -149,6 +165,13 @@
             };
         }
 
+        // עדכון מיקום חיווי המבט
+        function updateGazeDot(x, y) {
+            const gazeDot = document.getElementById('gazeDot');
+            gazeDot.style.left = `${x - 7}px`;  // חיווי ממורכז לנקודת המבט
+            gazeDot.style.top = `${y - 7}px`;
+        }
+
         // Check if gaze is focused on a button for 0.5 seconds
         function checkFocus(x, y, buttonId, speechText) {
             const button = document.getElementById(buttonId);
@@ -169,16 +192,4 @@
                 }
             } else {
                 if (button.classList.contains('focused')) {
-                    button.classList.remove('focused');
-                    clearTimeout(button.focusTimer);
-                }
-            }
-        }
-
-        // Hide video feed but keep tracking working
-        window.onload = function() {
-            webgazer.begin();
-        };
-    </script>
-</body>
-</html>
+                    button.classList.remove
