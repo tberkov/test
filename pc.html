@@ -94,8 +94,7 @@
             try {
                 webgazer.setRegression('ridge')
                         .setTracker('TFFacemesh')  // השתמש ב-TFFacemesh במקום clmtrackr
-                        .begin()
-                        .showPredictionPoints(true); // Show gaze prediction points for debugging
+                        .begin();
 
                 console.log("WebGazer started with TFFacemesh tracker.");
 
