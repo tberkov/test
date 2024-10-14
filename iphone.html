@@ -34,12 +34,37 @@
     <!-- Area for showing debug messages -->
     <div id="debug-info" style="font-size: 4vw; margin-top: 30px;"></div>
 
-    <script src="https://api.gazecloud.com/CloudEye.js"></script>
     <script>
-        window.onload = function () {
-            // Display debug information
+        // Function to load GazeCloudAPI using fetch
+        function loadGazeCloudAPI() {
             const debugInfo = document.getElementById('debug-info');
-            debugInfo.textContent = "Initializing gaze tracking...";
+            debugInfo.textContent = "Loading GazeCloudAPI...";
+
+            // Fetch GazeCloudAPI script
+            fetch("https://api.gazecloud.com/CloudEye.js")
+                .then(response => {
+                    if (response.ok) {
+                        return response.text();
+                    }
+                    throw new Error("Failed to load GazeCloudAPI");
+                })
+                .then(scriptText => {
+                    const scriptElement = document.createElement('script');
+                    scriptElement.textContent = scriptText;
+                    document.head.appendChild(scriptElement);
+                    debugInfo.textContent = "GazeCloudAPI loaded successfully!";
+                    startGazeTracking(); // Start gaze tracking after the API is loaded
+                })
+                .catch(error => {
+                    debugInfo.textContent = `Error loading GazeCloudAPI: ${error.message}`;
+                    console.error(error);
+                });
+        }
+
+        // Function to start gaze tracking
+        function startGazeTracking() {
+            const debugInfo = document.getElementById('debug-info');
+            debugInfo.textContent += " Initializing gaze tracking...";
 
             // Start gaze tracking
             GazeCloudAPI.StartEyeTracking();
@@ -86,6 +111,11 @@
                 .catch(function (error) {
                     debugInfo.textContent += ` Camera error: ${error.message}`;
                 });
+        }
+
+        // Load GazeCloudAPI when the page loads
+        window.onload = function () {
+            loadGazeCloudAPI();
         };
     </script>
 </body>
