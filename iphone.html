@@ -105,7 +105,8 @@
                 const landmarks = results.multiFaceLandmarks[0];
                 const nose = landmarks[1]; // נקודת האף
 
-                const noseX = nose.x * window.innerWidth;
+                // התזוזה של הנקודה הפוכה מהצד של האף כדי שהכיוון יתאים
+                const noseX = (1 - nose.x) * window.innerWidth; // תיקון עבור כיוון תנועה
                 const noseY = nose.y * window.innerHeight;
 
                 // עדכון מיקום הנקודה האדומה בהתאם למיקום האף
