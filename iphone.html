@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="he">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>מעקב מבט פשוט</title>
+    <title>Simple Gaze Tracking</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -11,8 +11,8 @@
             margin-top: 50px;
         }
         .button {
-            font-size: 6vw; /* גודל רספונסיבי */
-            padding: 5vw 10vw; /* התאמת הכפתורים למסכים קטנים */
+            font-size: 6vw; /* Responsive font size */
+            padding: 5vw 10vw; /* Responsive padding */
             margin: 20px;
             border-radius: 10px;
             cursor: pointer;
@@ -27,24 +27,24 @@
     </style>
 </head>
 <body>
-    <h1 style="font-size: 6vw;">בחר על ידי מיקוד מבט: כן או לא?</h1>
-    <button id="yes-btn" class="button">כן</button>
-    <button id="no-btn" class="button">לא</button>
+    <h1 style="font-size: 6vw;">Choose by Gaze: Yes or No?</h1>
+    <button id="yes-btn" class="button">Yes</button>
+    <button id="no-btn" class="button">No</button>
 
     <script src="https://api.gazecloud.com/CloudEye.js"></script>
     <script>
         window.onload = function () {
-            // התחלת מעקב מבט
+            // Start gaze tracking
             GazeCloudAPI.StartEyeTracking();
 
             GazeCloudAPI.OnGaze = function (GazeData) {
                 if (GazeData) {
-                    const x = GazeData.docX; // מיקום אופקי של המבט
-                    const y = GazeData.docY; // מיקום אנכי של המבט
+                    const x = GazeData.docX; // Gaze horizontal position
+                    const y = GazeData.docY; // Gaze vertical position
 
                     console.log(`X: ${x}, Y: ${y}`);
 
-                    // בדיקת מיקוד על הכפתור 'כן'
+                    // Check if the gaze is on the 'Yes' button
                     const yesBtn = document.getElementById('yes-btn');
                     const noBtn = document.getElementById('no-btn');
                     const yesBtnRect = yesBtn.getBoundingClientRect();
@@ -57,7 +57,7 @@
                         yesBtn.style.backgroundColor = 'lightgreen';
                     }
 
-                    // בדיקת מיקוד על הכפתור 'לא'
+                    // Check if the gaze is on the 'No' button
                     if (x >= noBtnRect.left && x <= noBtnRect.right &&
                         y >= noBtnRect.top && y <= noBtnRect.bottom) {
                         noBtn.style.backgroundColor = 'red';
@@ -65,7 +65,7 @@
                         noBtn.style.backgroundColor = 'lightcoral';
                     }
                 } else {
-                    console.log("אין נתוני מבט זמינים");
+                    console.log("No gaze data available");
                 }
             };
         };
