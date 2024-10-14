@@ -3,27 +3,83 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Camera Test</title>
+    <title>FaceMesh Gaze Tracking</title>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/facemesh"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils"></script>
     <style>
         body {
+            font-family: Arial, sans-serif;
             text-align: center;
             padding: 20px;
         }
-        video {
+        #output {
+            position: relative;
+            display: inline-block;
             width: 640px;
             height: 480px;
-            border: 1px solid black;
+        }
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        #gazeDot {
+            position: absolute;
+            width: 15px;
+            height: 15px;
+            background-color: red;
+            border-radius: 50%;
+        }
+        .focusButton {
+            width: 80%;
+            height: 100px;
+            background-color: #4CAF50;
+            color: white;
+            font-size: 20px;
+            border: none;
+            margin: 50px auto;
+            text-align: center;
+            line-height: 100px;
+            border-radius: 15px;
+        }
+        #noButton {
+            background-color: #F44336;
+        }
+        /* הצגת הווידאו בגודל קטן ושקוף */
+        video {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 160px;  /* גודל קטן */
+            height: 120px;
+            opacity: 0.2;  /* שקיפות גבוהה */
+            z-index: -1;   /* שולח את הווידאו מאחורי הקנבס */
         }
     </style>
 </head>
 <body>
-    <h1>Camera Test</h1>
-    <video id="video" autoplay></video>
+    <h1>FaceMesh Gaze Tracking</h1>
+    <div id="output">
+        <video id="video" autoplay></video>  <!-- וידאו מוצג בגודל קטן ושקוף -->
+        <canvas id="canvas" width="640" height="480"></canvas>
+    </div>
+    <div id="gazeDot"></div>
+
+    <div id="yesButton" class="focusButton" onclick="speak('Yes')">Yes</div>
+    <div id="noButton" class="focusButton" onclick="speak('No')">No</div>
 
     <script>
+        const videoElement = document.getElementById('video');
+        const canvasElement = document.getElementById('canvas');
+        const canvasCtx = canvasElement.getContext('2d');
+        const gazeDot = document.getElementById('gazeDot');
+
+        // הפעלת המצלמה
         async function startVideo() {
             try {
-                const videoElement = document.getElementById('video');
                 const stream = await navigator.mediaDevices.getUserMedia({ video: true });
                 videoElement.srcObject = stream;
                 console.log("Camera is running.");
@@ -33,7 +89,65 @@
             }
         }
 
+        // הגדרת FaceMesh
+        const faceMesh = new FaceMesh({
+            locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/facemesh/${file}`,
+        });
+
+        faceMesh.setOptions({
+            maxNumFaces: 1,
+            refineLandmarks: true,
+            minDetectionConfidence: 0.5,
+            minTrackingConfidence: 0.5,
+        });
+
+        // הפעלת FaceMesh ברגע שמתקבלים נתונים מהמצלמה
+        faceMesh.onResults(onResults);
+
+        const camera = new Camera(videoElement, {
+            onFrame: async () => {
+                await faceMesh.send({ image: videoElement });
+            },
+            width: 640,
+            height: 480,
+        });
+
+        // פונקציה לטיפול בתוצאות של FaceMesh
+        function onResults(results) {
+            if (results.multiFaceLandmarks.length > 0) {
+                canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+
+                const landmarks = results.multiFaceLandmarks[0];
+                drawConnectors(canvasCtx, landmarks, FACEMESH_TESSELATION, { color: '#C0C0C070', lineWidth: 1 });
+                drawLandmarks(canvasCtx, landmarks, { color: '#FF3030', lineWidth: 2 });
+
+                // נתוני עיניים - החלקים 468, 473 הם מיקום עיניים שמאל וימין
+                const leftEye = landmarks[468];
+                const rightEye = landmarks[473];
+
+                const avgX = (leftEye.x + rightEye.x) / 2;
+                const avgY = (leftEye.y + rightEye.y) / 2;
+
+                // המרת מיקום העיניים למיקום על המסך
+                const gazeX = avgX * canvasElement.width;
+                const gazeY = avgY * canvasElement.height;
+
+                // עדכון מיקום הנקודה האדומה לפי המבט
+                gazeDot.style.left = `${gazeX - 7}px`;
+                gazeDot.style.top = `${gazeY - 7}px`;
+            }
+        }
+
+        // הפעלת המצלמה והפעלת FaceMesh
+        camera.start();
         startVideo();
+
+        // פונקציה לפלט קולי
+        function speak(text) {
+            const msg = new SpeechSynthesisUtterance(text);
+            msg.lang = 'en-US';  // הגדרת השפה לאנגלית
+            window.speechSynthesis.speak(msg);
+        }
     </script>
 </body>
 </html>
