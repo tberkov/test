@@ -1,193 +1,83 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="he">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gaze-based Selection</title>
-    <script src="https://webgazer.cs.brown.edu/webgazer.js"></script>
+    <title>מעקב מבט - כן ולא עם פלט קולי</title>
     <style>
         body {
             font-family: Arial, sans-serif;
             text-align: center;
-            padding: 50px;
+            margin-top: 100px;
         }
-
-        .focusButton {
-            width: 300px;
-            height: 150px;
-            background-color: #4CAF50;
-            color: white;
-            font-size: 30px;
-            border: none;
-            margin: 50px;
-            text-align: center;
-            line-height: 150px;
-            border-radius: 15px;
-            display: none;
+        .button {
+            font-size: 48px; /* הגדלנו את גודל הטקסט */
+            padding: 30px 60px; /* הגדלנו את הכפתורים */
+            margin: 40px;
+            border-radius: 20px;
+            cursor: pointer;
         }
-
-        #noButton {
-            background-color: #F44336;
+        #yes-btn {
+            background-color: lightgreen;
         }
-
-        #gazeDot {
-            position: absolute;
-            width: 15px;
-            height: 15px;
-            background-color: blue;
-            border-radius: 50%;
-            display: none;
+        #no-btn {
+            background-color: lightcoral;
         }
     </style>
 </head>
 <body>
-    <h1>Gaze-based Selection</h1>
-    <p>Click the button to start calibration:</p>
-    <button id="startButton" onclick="initializeSystem()">Start Calibration</button>
+    <h1>בחר על ידי מיקוד מבט: כן או לא?</h1>
+    <button id="yes-btn" class="button">כן</button>
+    <button id="no-btn" class="button">לא</button>
 
-    <div id="yesButton" class="focusButton" onclick="speak('Yes')">Yes</div>
-    <div id="noButton" class="focusButton" onclick="speak('No')" style="background-color: #F44336;">No</div>
-    
-    <div id="gazeDot"></div>
-
+    <script src="https://api.gazecloud.com/CloudEye.js"></script>
     <script>
-        let initialized = false;
-        let gazeDataBuffer = [];
-        const bufferSize = 10; // Buffer size for gaze smoothing
-        let focusTime = {}; // Tracks how long gaze has been focused on each button
+        let lastFocusedButton = ""; // משתנה לזכור את הכפתור הממוקד האחרון
 
-        // Function to trigger voice output
+        // פונקציה להשמעת פלט קולי
         function speak(text) {
-            console.log("Attempting to speak:", text); // בדיקה לקונסול
-            const msg = new SpeechSynthesisUtterance(text);
-            msg.lang = 'en-US';  // Set language to English (US)
-            msg.onstart = () => console.log("Speech started:", text);  // בדיקת תחילת הפלט
-            msg.onend = () => console.log("Speech finished:", text);  // בדיקת סיום הפלט
-            window.speechSynthesis.speak(msg);
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'he-IL'; // שפה עברית
+            window.speechSynthesis.speak(utterance);
         }
 
-        // Initialize system and check camera access
-        function initializeSystem() {
-            if (!initialized) {
-                console.log("Initializing system...");
+        window.onload = function () {
+            GazeCloudAPI.StartEyeTracking();
 
-                // בדוק אם WebGazer נטען
-                if (typeof webgazer === "undefined") {
-                    alert("WebGazer failed to load. Please check the script source.");
-                    return;
+            GazeCloudAPI.OnGaze = function (GazeData) {
+                const x = GazeData.docX; // מיקום אופקי של המבט
+                const y = GazeData.docY; // מיקום אנכי של המבט
+
+                // בדיקת מיקוד על הכפתור 'כן'
+                const yesBtn = document.getElementById('yes-btn');
+                const noBtn = document.getElementById('no-btn');
+                const yesBtnRect = yesBtn.getBoundingClientRect();
+                const noBtnRect = noBtn.getBoundingClientRect();
+
+                if (x >= yesBtnRect.left && x <= yesBtnRect.right &&
+                    y >= yesBtnRect.top && y <= yesBtnRect.bottom) {
+                    yesBtn.style.backgroundColor = 'green';
+                    if (lastFocusedButton !== "כן") {
+                        speak("כן");
+                        lastFocusedButton = "כן";
+                    }
+                } else {
+                    yesBtn.style.backgroundColor = 'lightgreen';
                 }
 
-                // בקשת גישה למצלמה
-                requestCameraAccess()
-                    .then(() => {
-                        console.log("Camera access granted. Starting WebGazer...");
-                        startWebGazer(); // הפעלת WebGazer לאחר גישת מצלמה
-                    })
-                    .catch((err) => {
-                        console.error("Camera access error:", err);
-                        alert("Failed to access camera. Check permissions.");
-                    });
-            }
-        }
-
-        // בקשת גישה למצלמה
-        function requestCameraAccess() {
-            return navigator.mediaDevices.getUserMedia({ video: true });
-        }
-
-        // הפעלת WebGazer עם tracker TFFacemesh
-        function startWebGazer() {
-            try {
-                webgazer.setRegression('ridge')
-                        .setTracker('TFFacemesh')  // השתמש ב-TFFacemesh במקום clmtrackr
-                        .begin();
-
-                console.log("WebGazer started with TFFacemesh tracker.");
-
-                initialized = true;
-                document.getElementById('startButton').style.display = 'none';
-                startCalibration(); // הפעלת הכיול
-            } catch (error) {
-                console.error("Error initializing WebGazer:", error);
-                alert("Failed to initialize WebGazer. Please check camera permissions.");
-            }
-        }
-
-        // Start simple calibration
-        function startCalibration() {
-            console.log("Calibration started.");
-            document.getElementById('yesButton').style.display = 'inline-block';
-            document.getElementById('noButton').style.display = 'inline-block';
-            document.getElementById('gazeDot').style.display = 'block';
-            startTracking(); // Begin gaze tracking
-        }
-
-        // Add gaze data to the buffer
-        function addGazeData(x, y) {
-            gazeDataBuffer.push({ x: x, y: y });
-            if (gazeDataBuffer.length > bufferSize) {
-                gazeDataBuffer.shift(); // Remove oldest data point
-            }
-        }
-
-        // Get the average gaze point for smoothing
-        function getAveragedGaze() {
-            let sumX = 0;
-            let sumY = 0;
-            gazeDataBuffer.forEach(point => {
-                sumX += point.x;
-                sumY += point.y;
-            });
-            return {
-                x: sumX / gazeDataBuffer.length,
-                y: sumY / gazeDataBuffer.length
+                // בדיקת מיקוד על הכפתור 'לא'
+                if (x >= noBtnRect.left && x <= noBtnRect.right &&
+                    y >= noBtnRect.top && y <= noBtnRect.bottom) {
+                    noBtn.style.backgroundColor = 'red';
+                    if (lastFocusedButton !== "לא") {
+                        speak("לא");
+                        lastFocusedButton = "לא";
+                    }
+                } else {
+                    noBtn.style.backgroundColor = 'lightcoral';
+                }
             };
-        }
-
-        // Start tracking gaze
-        function startTracking() {
-            webgazer.setGazeListener((data, elapsedTime) => {
-                if (data == null) return;
-                addGazeData(data.x, data.y);
-
-                const averagedGaze = getAveragedGaze();
-                updateGazeDot(averagedGaze.x, averagedGaze.y);
-
-                checkFocus(averagedGaze.x, averagedGaze.y, 'yesButton', 'Yes');
-                checkFocus(averagedGaze.x, averagedGaze.y, 'noButton', 'No');
-            }).begin();
-        }
-
-        // Update the location of the gaze dot
-        function updateGazeDot(x, y) {
-            const gazeDot = document.getElementById('gazeDot');
-            gazeDot.style.left = `${x - 7}px`;  // Center the dot
-            gazeDot.style.top = `${y - 7}px`;
-        }
-
-        // Check if gaze is focused on a button for at least 0.5 seconds
-        function checkFocus(x, y, buttonId, speechText) {
-            const button = document.getElementById(buttonId);
-            const rect = button.getBoundingClientRect();
-            const padding = 30; // Increase padding for more lenient focus area
-
-            if (
-                x > rect.left - padding &&
-                x < rect.right + padding &&
-                y > rect.top - padding &&
-                y < rect.bottom + padding
-            ) {
-                if (!focusTime[buttonId]) {
-                    focusTime[buttonId] = Date.now();
-                } else if (Date.now() - focusTime[buttonId] > 500) {
-                    // אם המבט ממוקד יותר מ-0.5 שניות, תופעל הפלט
-                    speak(speechText);
-                    focusTime[buttonId] = null; // Reset the timer after speaking
-                }
-            } else {
-                focusTime[buttonId] = null; // Reset the timer if gaze moves away
-            }
-        }
+        };
     </script>
 </body>
 </html>
