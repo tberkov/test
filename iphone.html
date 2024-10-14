@@ -16,11 +16,15 @@
         #output {
             position: relative;
             display: inline-block;
+            width: 100%; /* התאמה רוחבית */
+            max-width: 100%;
         }
         canvas {
             position: absolute;
             top: 0;
             left: 0;
+            width: 100%; /* התאמה רוחבית */
+            height: auto;
         }
         #gazeDot {
             position: absolute;
@@ -36,13 +40,30 @@
             color: white;
             font-size: 20px;
             border: none;
-            margin: 50px auto; /* הגדלת המרחק בין הכפתורים */
+            margin: 50px auto;
             text-align: center;
             line-height: 100px;
             border-radius: 15px;
         }
         #noButton {
             background-color: #F44336;
+        }
+        /* התאמה לתצוגה רוחבית */
+        @media (orientation: landscape) {
+            body {
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+            }
+            canvas {
+                width: 100%;
+                height: auto;
+            }
+            .focusButton {
+                width: 50%;
+                margin: 20px auto;
+            }
         }
     </style>
 </head>
@@ -63,9 +84,16 @@
         const canvasCtx = canvasElement.getContext('2d');
         const gazeDot = document.getElementById('gazeDot');
 
+        // הפעלת המצלמה
         async function startVideo() {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-            videoElement.srcObject = stream;
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                videoElement.srcObject = stream;
+                console.log("Camera is running.");
+            } catch (err) {
+                console.error("Error accessing camera: ", err);
+                alert("Failed to access camera. Please check your permissions.");
+            }
         }
 
         // הגדרת FaceMesh
@@ -89,7 +117,9 @@
             width: 640,
             height: 480,
         });
+
         camera.start();
+        startVideo(); // הפעלת המצלמה בהתחלה
 
         function onResults(results) {
             if (results.multiFaceLandmarks.length > 0) {
