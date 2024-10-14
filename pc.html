@@ -71,36 +71,41 @@
                     return;
                 }
 
-                try {
-                    webgazer.setRegression('ridge')
-                            .setTracker('clmtrackr')
-                            .begin()
-                            .showPredictionPoints(true); // Show gaze prediction points for debugging
-                            
-                    console.log("WebGazer started.");
-
-                    // Check if camera access works
-                    requestCameraAccess(); // Request camera permissions
-                    initialized = true;
-                    document.getElementById('startButton').style.display = 'none';
-                    startCalibration(); // Start calibration process
-                } catch (error) {
-                    console.error("Error initializing WebGazer:", error);
-                    alert("Failed to initialize WebGazer. Please check camera permissions.");
-                }
+                // בקשת גישה למצלמה
+                requestCameraAccess()
+                    .then(() => {
+                        console.log("Camera access granted. Starting WebGazer...");
+                        startWebGazer(); // הפעלת WebGazer לאחר גישת מצלמה
+                    })
+                    .catch((err) => {
+                        console.error("Camera access error:", err);
+                        alert("Failed to access camera. Check permissions.");
+                    });
             }
         }
 
-        // Request camera access
+        // בקשת גישה למצלמה
         function requestCameraAccess() {
-            navigator.mediaDevices.getUserMedia({ video: true })
-                .then(function(stream) {
-                    console.log("Camera access granted.");
-                })
-                .catch(function(err) {
-                    console.error("Camera access denied:", err);
-                    alert("Camera access is required for gaze tracking.");
-                });
+            return navigator.mediaDevices.getUserMedia({ video: true });
+        }
+
+        // הפעלת WebGazer
+        function startWebGazer() {
+            try {
+                webgazer.setRegression('ridge')
+                        .setTracker('clmtrackr')
+                        .begin()
+                        .showPredictionPoints(true); // Show gaze prediction points for debugging
+
+                console.log("WebGazer started.");
+
+                initialized = true;
+                document.getElementById('startButton').style.display = 'none';
+                startCalibration(); // הפעלת הכיול
+            } catch (error) {
+                console.error("Error initializing WebGazer:", error);
+                alert("Failed to initialize WebGazer. Please check camera permissions.");
+            }
         }
 
         // Start simple calibration
