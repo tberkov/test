@@ -39,6 +39,17 @@
             display: none;
         }
 
+        /* שינוי תצוגת המצלמה */
+        video#webgazerVideoFeed {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            width: 100px;
+            height: 80px;
+            opacity: 0.5;
+            display: none; /* אם אתה רוצה להסתיר את המצלמה לגמרי */
+        }
+
         /* התאמת הממשק למכשירי נייד */
         @media only screen and (max-width: 600px) {
             .focusButton {
@@ -58,6 +69,8 @@
     <div id="noButton" class="focusButton" onclick="speak('No')" style="background-color: #F44336;">No</div>
     
     <div id="gazeDot"></div>
+
+    <video id="webgazerVideoFeed" autoplay></video> <!-- תצוגת הווידאו מהמצלמה -->
 
     <script>
         let initialized = false;
@@ -109,6 +122,9 @@
                         .setTracker('TFFacemesh')  // השתמש ב-TFFacemesh במקום clmtrackr
                         .begin();
 
+                // הסתירו את הווידאו לאחר הפעלה (אם יש צורך)
+                document.getElementById('webgazerVideoFeed').style.display = 'none';
+
                 console.log("WebGazer started with TFFacemesh tracker.");
 
                 initialized = true;
@@ -159,6 +175,8 @@
 
                 const averagedGaze = getAveragedGaze();
                 updateGazeDot(averagedGaze.x, averagedGaze.y);
+
+                console.log(`Gaze Data: X=${averagedGaze.x}, Y=${averagedGaze.y}`); // Debugging
 
                 checkFocus(averagedGaze.x, averagedGaze.y, 'yesButton', 'Yes');
                 checkFocus(averagedGaze.x, averagedGaze.y, 'noButton', 'No');
