@@ -3,16 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>מעקב מבט - כן ולא</title>
+    <title>מעקב מבט - כן ולא עם פלט קולי</title>
     <style>
         body {
             font-family: Arial, sans-serif;
             text-align: center;
-            margin-top: 100px;
+            margin-top: 50px;
         }
         .button {
-            font-size: 24px;
-            padding: 15px 30px;
+            font-size: 6vw; /* גודל רספונסיבי מותאם לאייפון */
+            padding: 5vw 10vw; /* התאמת הכפתורים למסכים קטנים */
             margin: 20px;
             border-radius: 10px;
             cursor: pointer;
@@ -26,12 +26,21 @@
     </style>
 </head>
 <body>
-    <h1>בחר על ידי מיקוד מבט: כן או לא?</h1>
+    <h1 style="font-size: 6vw;">בחר על ידי מיקוד מבט: כן או לא?</h1>
     <button id="yes-btn" class="button">כן</button>
     <button id="no-btn" class="button">לא</button>
 
     <script src="https://api.gazecloud.com/CloudEye.js"></script>
     <script>
+        let lastFocusedButton = ""; // משתנה לזכור את הכפתור הממוקד האחרון
+
+        // פונקציה להשמעת פלט קולי
+        function speak(text) {
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'he-IL'; // שפה עברית
+            window.speechSynthesis.speak(utterance);
+        }
+
         window.onload = function () {
             GazeCloudAPI.StartEyeTracking();
 
@@ -48,6 +57,10 @@
                 if (x >= yesBtnRect.left && x <= yesBtnRect.right &&
                     y >= yesBtnRect.top && y <= yesBtnRect.bottom) {
                     yesBtn.style.backgroundColor = 'green';
+                    if (lastFocusedButton !== "כן") {
+                        speak("כן");
+                        lastFocusedButton = "כן";
+                    }
                 } else {
                     yesBtn.style.backgroundColor = 'lightgreen';
                 }
@@ -56,11 +69,22 @@
                 if (x >= noBtnRect.left && x <= noBtnRect.right &&
                     y >= noBtnRect.top && y <= noBtnRect.bottom) {
                     noBtn.style.backgroundColor = 'red';
+                    if (lastFocusedButton !== "לא") {
+                        speak("לא");
+                        lastFocusedButton = "לא";
+                    }
                 } else {
                     noBtn.style.backgroundColor = 'lightcoral';
                 }
             };
         };
+
+        // ווידוא הפעלה של speech synthesis בספארי
+        document.body.addEventListener('click', () => {
+            if (window.speechSynthesis.paused) {
+                window.speechSynthesis.resume();
+            }
+        });
     </script>
 </body>
 </html>
