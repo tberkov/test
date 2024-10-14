@@ -41,7 +41,7 @@
         .button {
             position: absolute;
             width: 40vw; /* שימוש באחוזי רוחב כדי להתאים למסכים קטנים */
-            height: 15vw; /* שימוש באחוזי גובה כדי להתאים למסכים קטנים */
+            height: 20vw; /* הגברת הגובה של הכפתורים */
             font-size: 5vw; /* גודל טקסט שיתאים למסכים קטנים */
             border: none;
             cursor: pointer;
@@ -53,12 +53,16 @@
         #yesButton {
             background-color: green;
             color: white;
-            left: 25%; /* מרווח בין הכפתורים */
+            left: 25%; /* מיקום הכפתור במרכז שמאל */
+            top: 50%; /* מיקום הכפתורים במרכז המסך */
+            transform: translate(-50%, -50%);
         }
         #noButton {
             background-color: red;
             color: white;
-            left: 75%; /* מרווח בין הכפתורים */
+            left: 75%; /* מיקום הכפתור במרכז ימין */
+            top: 50%; /* מיקום הכפתורים במרכז המסך */
+            transform: translate(-50%, -50%);
         }
         .button span {
             margin-right: 10px;
@@ -160,7 +164,7 @@
             focusStartTime = null;
         }
 
-        // פונקציה להפעלת הכפתור (פלט קולי)
+        // פונקציה להפעלת הכפתור (פלט קולי ולחיצה)
         function triggerButton(button) {
             if (button === 'yes') {
                 speak('Yes');
@@ -187,6 +191,10 @@
 
         camera.start();
         startCamera();
+
+        // הוספת פלט קולי על ידי לחיצה
+        yesButton.addEventListener('click', () => speak('Yes'));
+        noButton.addEventListener('click', () => speak('No'));
     </script>
 </body>
 </html>
