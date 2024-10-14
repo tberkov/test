@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gaze-based Selection</title>
+    <script src="https://webgazer.cs.brown.edu/webgazer.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 50px;
+        }
+
+        .focusButton {
+            width: 300px;
+            height: 150px;
+            background-color: #4CAF50;
+            color: white;
+            font-size: 30px;
+            border: none;
+            margin: 50px;
+            text-align: center;
+            line-height: 150px;
+            border-radius: 15px;
+            display: none;
+        }
+
+        #noButton {
+            background-color: #F44336;
+        }
+
+        /* Calibration point */
+        .calibration-point {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background-color: red;
+            border-radius: 50%;
+            display: none;
+        }
+
+        /* Hide video feed from WebGazer */
+        #webgazerVideoFeed {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <h1>Gaze-based Selection</h1>
+    <p>Click the button to start calibration:</p>
+    <button id="startButton" onclick="initializeSystem()">Start Calibration</button>
+
+    <div id="yesButton" class="focusButton" onclick="speak('Yes')">Yes</div>
+    <div id="noButton" class="focusButton" onclick="speak('No')" style="background-color: #F44336;">No</div>
+
+    <!-- Calibration point -->
+    <div id="calibrationPoint" class="calibration-point"></div>
+
+    <script>
+        let initialized = false;
+        let gazeDataBuffer = [];
+        const bufferSize = 10; // Number of gaze points to average
+
+        // Function to trigger voice output
+        function speak(text) {
+            const msg = new SpeechSynthesisUtterance(text);
+            msg.lang = 'en-US';  // Set language to English (US)
+            window.speechSynthesis.speak(msg);
+        }
+
+        // Start the system with calibration and gaze tracking
+        function initializeSystem() {
+            if (!initialized) {
+                webgazer.begin(); // Start WebGazer
+                alert('Ensure camera permission is allowed for gaze tracking.');
+                initialized = true;
+                document.getElementById('startButton').style.display = 'none';
+                startCalibration(); // Start calibration
+            }
+        }
+
+        // Calibration points for the user to follow
+        function startCalibration() {
+            const calibrationPoints = [
+                { x: window.innerWidth * 0.1, y: window.innerHeight * 0.1 },
+                { x: window.innerWidth * 0.9, y: window.innerHeight * 0.1 },
+                { x: window.innerWidth * 0.1, y: window.innerHeight * 0.9 },
+                { x: window.innerWidth * 0.9, y: window.innerHeight * 0.9 },
+                { x: window.innerWidth * 0.5, y: window.innerHeight * 0.5 }
+            ];
+
+            calibrationPoints.forEach((point, index) => {
+                setTimeout(() => {
+                    showCalibrationPoint(point.x, point.y);
+                }, index * 3000);
+            });
+
+            setTimeout(() => {
+                document.getElementById('yesButton').style.display = 'inline-block';
+                document.getElementById('noButton').style.display = 'inline-block';
+                startTracking(); // Begin tracking gaze after calibration
+            }, calibrationPoints.length * 3000);
+        }
+
+        // Show the calibration point
+        function showCalibrationPoint(x, y) {
+            const point = document.getElementById('calibrationPoint');
+            point.style.left = `${x}px`;
+            point.style.top = `${y}px`;
+            point.style.display = 'block';
+
+            setTimeout(() => {
+                point.style.display = 'none';
+            }, 2000);
+        }
+
+        // Start gaze tracking after calibration
+        function startTracking() {
+            webgazer.setGazeListener((data) => {
+                if (data == null) return;
+                addGazeData(data.x, data.y);
+
+                const averagedGaze = getAveragedGaze();
+                checkFocus(averagedGaze.x, averagedGaze.y, 'yesButton', 'Yes');
+                checkFocus(averagedGaze.x, averagedGaze.y, 'noButton', 'No');
+            }).begin();
+        }
+
+        // Add gaze data to the buffer
+        function addGazeData(x, y) {
+            gazeDataBuffer.push({ x: x, y: y });
+            if (gazeDataBuffer.length > bufferSize) {
+                gazeDataBuffer.shift(); // Remove oldest data point
+            }
+        }
+
+        // Get the average gaze point
+        function getAveragedGaze() {
+            let sumX = 0;
+            let sumY = 0;
+            gazeDataBuffer.forEach(point => {
+                sumX += point.x;
+                sumY += point.y;
+            });
+            return {
+                x: sumX / gazeDataBuffer.length,
+                y: sumY / gazeDataBuffer.length
+            };
+        }
+
+        // Check if gaze is focused on a button for 0.5 seconds
+        function checkFocus(x, y, buttonId, speechText) {
+            const button = document.getElementById(buttonId);
+            const rect = button.getBoundingClientRect();
+            const padding = 30; // Increase padding for more lenient focus area
+
+            if (
+                x > rect.left - padding &&
+                x < rect.right + padding &&
+                y > rect.top - padding &&
+                y < rect.bottom + padding
+            ) {
+                if (!button.classList.contains('focused')) {
+                    button.classList.add('focused');
+                    button.focusTimer = setTimeout(() => {
+                        speak(speechText);
+                    }, 500); // 0.5 seconds of focus triggers speech
+                }
+            } else {
+                if (button.classList.contains('focused')) {
+                    button.classList.remove('focused');
+                    clearTimeout(button.focusTimer);
+                }
+            }
+        }
+
+        // Hide video feed but keep tracking working
+        window.onload = function() {
+            webgazer.begin();
+        };
+    </script>
+</body>
+</html>
