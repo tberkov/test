@@ -45,7 +45,7 @@
             display: none !important;
         }
 
-        /* חיווי מיקום המבט */
+        /* Gaze dot חיווי מיקום המבט */
         #gazeDot {
             position: absolute;
             width: 15px;
@@ -73,7 +73,7 @@
     <script>
         let initialized = false;
         let gazeDataBuffer = [];
-        const bufferSize = 20; // הגדל את גודל הבופר ל-20 נקודות מבט
+        const bufferSize = 20; // Buffer size for gaze smoothing
 
         // Function to trigger voice output
         function speak(text) {
@@ -85,12 +85,34 @@
         // Start the system with calibration and gaze tracking
         function initializeSystem() {
             if (!initialized) {
-                webgazer.begin(); // Start WebGazer
-                alert('Ensure camera permission is allowed for gaze tracking.');
-                initialized = true;
-                document.getElementById('startButton').style.display = 'none';
-                startCalibration(); // Start calibration
+                try {
+                    webgazer.setRegression('ridge')  // Set WebGazer to ridge regression
+                            .setTracker('clmtrackr')  // Use the CLM tracker
+                            .begin()  // Start WebGazer
+                            .showPredictionPoints(false);  // Hide the prediction points
+
+                    console.log("WebGazer initialized.");
+                    requestCameraAccess(); // Request camera access from the user
+                    initialized = true;
+                    document.getElementById('startButton').style.display = 'none';
+                    startCalibration(); // Start calibration
+                } catch (error) {
+                    console.error("Error initializing WebGazer:", error);
+                    alert("Failed to initialize WebGazer. Please check camera permissions.");
+                }
             }
+        }
+
+        // Request camera access and start WebGazer
+        function requestCameraAccess() {
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then(function(stream) {
+                    console.log("Camera access granted.");
+                })
+                .catch(function(err) {
+                    console.error("Camera access denied:", err);
+                    alert("Camera access is required for gaze tracking.");
+                });
         }
 
         // Calibration points for the user to follow
@@ -112,7 +134,7 @@
             setTimeout(() => {
                 document.getElementById('yesButton').style.display = 'inline-block';
                 document.getElementById('noButton').style.display = 'inline-block';
-                document.getElementById('gazeDot').style.display = 'block'; // הצגת החיווי
+                document.getElementById('gazeDot').style.display = 'block'; // Show the gaze dot
                 startTracking(); // Begin tracking gaze after calibration
             }, calibrationPoints.length * 3000);
         }
@@ -136,7 +158,7 @@
                 addGazeData(data.x, data.y);
 
                 const averagedGaze = getAveragedGaze();
-                updateGazeDot(averagedGaze.x, averagedGaze.y);  // עדכון מיקום החיווי
+                updateGazeDot(averagedGaze.x, averagedGaze.y);  // Update gaze dot location
 
                 checkFocus(averagedGaze.x, averagedGaze.y, 'yesButton', 'Yes');
                 checkFocus(averagedGaze.x, averagedGaze.y, 'noButton', 'No');
@@ -165,10 +187,10 @@
             };
         }
 
-        // עדכון מיקום חיווי המבט
+        // Update the location of the gaze dot
         function updateGazeDot(x, y) {
             const gazeDot = document.getElementById('gazeDot');
-            gazeDot.style.left = `${x - 7}px`;  // חיווי ממורכז לנקודת המבט
+            gazeDot.style.left = `${x - 7}px`;  // Center the dot
             gazeDot.style.top = `${y - 7}px`;
         }
 
@@ -192,4 +214,11 @@
                 }
             } else {
                 if (button.classList.contains('focused')) {
-                    button.classList.remove
+                    button.classList.remove('focused');
+                    clearTimeout(button.focusTimer);
+                }
+            }
+        }
+    </script>
+</body>
+</html>
