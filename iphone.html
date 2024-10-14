@@ -3,19 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FaceMesh Eye Tracking</title>
+    <title>FaceMesh Eye Tracking - iPhone</title>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
             text-align: center;
-            padding: 20px;
+            padding: 0;
+            margin: 0;
+            overflow: hidden; /* להימנע מגלילה על המסך */
+        }
+        #container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
         }
         video {
-            width: 640px;
-            height: 480px;
-            border: 1px solid black;
+            position: absolute;
+            width: 100vw; /* להתאים לרוחב המסך */
+            height: 100vh; /* להתאים לגובה המסך */
+            object-fit: cover; /* התאמה למסך בלי להשאיר שטחים ריקים */
+            z-index: 0;
         }
         #gazeDot {
             position: absolute;
@@ -23,19 +32,13 @@
             height: 15px;
             background-color: red;
             border-radius: 50%;
-        }
-        #container {
-            position: relative;
-            width: 640px;
-            height: 480px;
-            margin: 0 auto;
+            z-index: 1;
         }
     </style>
 </head>
 <body>
-    <h1>FaceMesh Eye Tracking</h1>
     <div id="container">
-        <video id="video" autoplay></video>
+        <video id="video" autoplay playsinline></video> <!-- playsinline הכרחי באייפון למניעת מסך מלא -->
         <div id="gazeDot"></div>
     </div>
 
@@ -76,8 +79,8 @@
                 const avgY = (leftEye.y + rightEye.y) / 2;
 
                 // המרת מיקום העיניים למיקום על המסך
-                const gazeX = avgX * videoElement.offsetWidth;
-                const gazeY = avgY * videoElement.offsetHeight;
+                const gazeX = avgX * window.innerWidth;
+                const gazeY = avgY * window.innerHeight;
 
                 // עדכון מיקום הנקודה האדומה בהתאם למיקום המבט
                 gazeDot.style.left = `${gazeX - 7}px`;
@@ -90,8 +93,8 @@
             onFrame: async () => {
                 await faceMesh.send({ image: videoElement });
             },
-            width: 640,
-            height: 480
+            width: window.innerWidth,
+            height: window.innerHeight
         });
 
         camera.start();
