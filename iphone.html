@@ -73,8 +73,8 @@
     <div id="container">
         <video id="video" autoplay playsinline></video>
         <div id="gazeDot"></div>
-        <button id="yesButton" class="button"><span>😊</span> Yes</button>
-        <button id="noButton" class="button"><span>😡</span> No</button>
+        <button id="yesButton" class="button"><span>😊</span> כן</button>
+        <button id="noButton" class="button"><span>😡</span> לא</button>
     </div>
 
     <script>
@@ -115,8 +115,8 @@
                 const landmarks = results.multiFaceLandmarks[0];
                 const nose = landmarks[1]; // נקודת האף
 
-                // התזוזה של הנקודה הפוכה מהצד של האף כדי שהכיוון יתאים
-                const noseX = (1 - nose.x) * window.innerWidth; // תיקון עבור כיוון תנועה
+                // תנועה ישירה ומהירה של הסמן
+                const noseX = (1 - nose.x) * window.innerWidth;
                 const noseY = nose.y * window.innerHeight;
 
                 // עדכון מיקום הנקודה האדומה בהתאם למיקום האף
@@ -167,16 +167,16 @@
         // פונקציה להפעלת הכפתור (פלט קולי ולחיצה)
         function triggerButton(button) {
             if (button === 'yes') {
-                speak('Yes');
+                speak('כן');
             } else if (button === 'no') {
-                speak('No');
+                speak('לא');
             }
         }
 
-        // פונקציה לפלט קולי
+        // פונקציה לפלט קולי בעברית
         function speak(text) {
             const msg = new SpeechSynthesisUtterance(text);
-            msg.lang = 'en-US';
+            msg.lang = 'he'; // עברית
             window.speechSynthesis.speak(msg);
         }
 
@@ -193,8 +193,8 @@
         startCamera();
 
         // הוספת פלט קולי על ידי לחיצה
-        yesButton.addEventListener('click', () => speak('Yes'));
-        noButton.addEventListener('click', () => speak('No'));
+        yesButton.addEventListener('click', () => speak('כן'));
+        noButton.addEventListener('click', () => speak('לא'));
     </script>
 </body>
 </html>
