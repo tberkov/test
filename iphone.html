@@ -1,80 +1,68 @@
 <!DOCTYPE html>
-<html lang="he" dir="rtl">
+<html lang="he">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>זיהוי מבט ובחירת כן/לא</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/webgazer/2.0.1/webgazer.min.js"></script>
+    <title>מיקוד מבט - כן ולא</title>
     <style>
-        /* שאר הסגנונות נשארים כפי שהיו */
-        #status {
-            margin-top: 20px;
-            font-weight: bold;
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin-top: 100px;
         }
-        #camera-feed {
-            width: 320px;
-            height: 240px;
-            border: 1px solid #ccc;
-            margin-top: 20px;
+        .button {
+            font-size: 24px;
+            padding: 15px 30px;
+            margin: 20px;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+        #yes-btn {
+            background-color: lightgreen;
+        }
+        #no-btn {
+            background-color: lightcoral;
         }
     </style>
 </head>
 <body>
-    <h1>זיהוי מבט ובחירת כן/לא</h1>
-    <div id="gaze-area">
-        <div id="yes-button" class="button">כן</div>
-        <div id="no-button" class="button">לא</div>
-    </div>
-    <div id="gaze-point"></div>
-    <button id="calibrate-button">כיול</button>
-    <div id="status"></div>
-    <video id="camera-feed" autoplay muted></video>
-    
+    <h1>בחר על ידי מיקוד מבט: כן או לא?</h1>
+    <button id="yes-btn" class="button">כן</button>
+    <button id="no-btn" class="button">לא</button>
+
+    <script src="https://webgazer.cs.brown.edu/webgazer.js"></script>
     <script>
-        const gazePoint = document.getElementById('gaze-point');
-        const yesButton = document.getElementById('yes-button');
-        const noButton = document.getElementById('no-button');
-        const calibrateButton = document.getElementById('calibrate-button');
-        const statusDiv = document.getElementById('status');
-        const cameraFeed = document.getElementById('camera-feed');
-
-        let lookingAt = null;
-        let lookTimer = null;
-
-        function updateStatus(message) {
-            statusDiv.textContent = message;
-        }
-
-        // בדיקת זמינות המצלמה
-        navigator.mediaDevices.getUserMedia({ video: true })
-            .then(stream => {
-                cameraFeed.srcObject = stream;
-                updateStatus('המצלמה פועלת. מתחיל זיהוי מבט...');
-                startWebGazer();
-            })
-            .catch(err => {
-                updateStatus('שגיאה בגישה למצלמה: ' + err.message);
-            });
-
-        function startWebGazer() {
-            webgazer.setGazeListener((data, timestamp) => {
+        window.onload = function () {
+            // התחלת מעקב המבט
+            webgazer.setGazeListener(function(data, elapsedTime) {
                 if (data == null) {
-                    updateStatus('לא מזוהה מבט. נסה לכייל שוב.');
                     return;
                 }
+                const x = data.x; // מיקום אופקי של המבט
+                const y = data.y; // מיקום אנכי של המבט
 
-                updateStatus('מזהה מבט');
-                // שאר הקוד לטיפול בנתוני המבט נשאר כשהיה
-                // ...
+                // בדיקת מיקוד על הכפתור 'כן'
+                const yesBtn = document.getElementById('yes-btn');
+                const noBtn = document.getElementById('no-btn');
+                const yesBtnRect = yesBtn.getBoundingClientRect();
+                const noBtnRect = noBtn.getBoundingClientRect();
+
+                if (x >= yesBtnRect.left && x <= yesBtnRect.right &&
+                    y >= yesBtnRect.top && y <= yesBtnRect.bottom) {
+                    yesBtn.style.backgroundColor = 'green';
+                } else {
+                    yesBtn.style.backgroundColor = 'lightgreen';
+                }
+
+                // בדיקת מיקוד על הכפתור 'לא'
+                if (x >= noBtnRect.left && x <= noBtnRect.right &&
+                    y >= noBtnRect.top && y <= noBtnRect.bottom) {
+                    noBtn.style.backgroundColor = 'red';
+                } else {
+                    noBtn.style.backgroundColor = 'lightcoral';
+                }
             }).begin();
-        }
-
-        calibrateButton.addEventListener('click', () => {
-            webgazer.showPredictionPoints(true);
-            updateStatus('נא להסתכל על הנקודות האדומות ולהקליק עליהן לכיול');
-        });
-
-        // שאר הקוד נשאר כשהיה
+        };
     </script>
 </body>
 </html>
