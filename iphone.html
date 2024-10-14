@@ -24,8 +24,9 @@
             width: 160px; /* גודל קטן של חלון המצלמה */
             height: 120px;
             object-fit: cover;
-            bottom: 10px;
-            right: 10px;
+            top: 10px; /* מיקום המצלמה בחלק העליון */
+            left: 50%;
+            transform: translateX(-50%);
             z-index: 0;
             opacity: 0.6; /* שקיפות המצלמה */
         }
@@ -42,20 +43,25 @@
             width: 40vw; /* שימוש באחוזי רוחב כדי להתאים למסכים קטנים */
             height: 15vw; /* שימוש באחוזי גובה כדי להתאים למסכים קטנים */
             font-size: 5vw; /* גודל טקסט שיתאים למסכים קטנים */
-            background-color: lightblue;
             border: none;
             cursor: pointer;
             z-index: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
         #yesButton {
-            top: 50%;
-            left: 30%;
-            transform: translate(-50%, -50%);
+            background-color: green;
+            color: white;
+            left: 25%; /* מרווח בין הכפתורים */
         }
         #noButton {
-            top: 50%;
-            left: 70%;
-            transform: translate(-50%, -50%);
+            background-color: red;
+            color: white;
+            left: 75%; /* מרווח בין הכפתורים */
+        }
+        .button span {
+            margin-right: 10px;
         }
     </style>
 </head>
@@ -63,8 +69,8 @@
     <div id="container">
         <video id="video" autoplay playsinline></video>
         <div id="gazeDot"></div>
-        <button id="yesButton" class="button">Yes</button>
-        <button id="noButton" class="button">No</button>
+        <button id="yesButton" class="button"><span>😊</span> Yes</button>
+        <button id="noButton" class="button"><span>😡</span> No</button>
     </div>
 
     <script>
