@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FaceMesh Debugging</title>
+    <title>FaceMesh Eye Tracking</title>
     <!-- קישור לספריית Mediapipe -->
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils"></script>
@@ -25,12 +25,20 @@
             background-color: red;
             border-radius: 50%;
         }
+        #container {
+            position: relative;
+            width: 640px;
+            height: 480px;
+            margin: 0 auto;
+        }
     </style>
 </head>
 <body>
-    <h1>FaceMesh Debugging</h1>
-    <video id="video" autoplay></video>
-    <div id="gazeDot"></div>
+    <h1>FaceMesh Eye Tracking</h1>
+    <div id="container">
+        <video id="video" autoplay></video>
+        <div id="gazeDot"></div>
+    </div>
 
     <script>
         const videoElement = document.getElementById('video');
@@ -49,7 +57,7 @@
             }
         }
 
-        // הפעלת FaceMesh מהספריה העדכנית
+        // הגדרת FaceMesh
         const faceMesh = new FaceMesh.FaceMesh({
             locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`,
         });
