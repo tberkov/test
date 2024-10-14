@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>מעקב מבט - כן ולא מותאם לנייד</title>
+    <title>מעקב מבט פשוט</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -31,34 +31,18 @@
     <button id="yes-btn" class="button">כן</button>
     <button id="no-btn" class="button">לא</button>
 
-    <!-- אלמנט להצגת מידע דיבוג -->
-    <div id="debug-info" style="font-size: 4vw; margin-top: 30px;"></div>
-
     <script src="https://api.gazecloud.com/CloudEye.js"></script>
     <script>
-        let lastFocusedButton = ""; // משתנה לזכור את הכפתור הממוקד האחרון
-
-        // פונקציה להשמעת פלט קולי
-        function speak(text) {
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = 'he-IL'; // שפה עברית
-            window.speechSynthesis.speak(utterance);
-        }
-
         window.onload = function () {
             // התחלת מעקב מבט
             GazeCloudAPI.StartEyeTracking();
-
-            // הצגת הודעת דיבוג ראשונית
-            document.getElementById('debug-info').textContent = "מעקב מבט הופעל.";
 
             GazeCloudAPI.OnGaze = function (GazeData) {
                 if (GazeData) {
                     const x = GazeData.docX; // מיקום אופקי של המבט
                     const y = GazeData.docY; // מיקום אנכי של המבט
 
-                    // הצגת מידע דיבוג על מיקום המבט
-                    document.getElementById('debug-info').textContent = `X: ${x.toFixed(2)}, Y: ${y.toFixed(2)}`;
+                    console.log(`X: ${x}, Y: ${y}`);
 
                     // בדיקת מיקוד על הכפתור 'כן'
                     const yesBtn = document.getElementById('yes-btn');
@@ -69,10 +53,6 @@
                     if (x >= yesBtnRect.left && x <= yesBtnRect.right &&
                         y >= yesBtnRect.top && y <= yesBtnRect.bottom) {
                         yesBtn.style.backgroundColor = 'green';
-                        if (lastFocusedButton !== "כן") {
-                            speak("כן");
-                            lastFocusedButton = "כן";
-                        }
                     } else {
                         yesBtn.style.backgroundColor = 'lightgreen';
                     }
@@ -81,26 +61,14 @@
                     if (x >= noBtnRect.left && x <= noBtnRect.right &&
                         y >= noBtnRect.top && y <= noBtnRect.bottom) {
                         noBtn.style.backgroundColor = 'red';
-                        if (lastFocusedButton !== "לא") {
-                            speak("לא");
-                            lastFocusedButton = "לא";
-                        }
                     } else {
                         noBtn.style.backgroundColor = 'lightcoral';
                     }
                 } else {
-                    // אם אין מידע על המבט
-                    document.getElementById('debug-info').textContent = "לא התקבל מידע ממערכת המעקב.";
+                    console.log("אין נתוני מבט זמינים");
                 }
             };
         };
-
-        // ווידוא הפעלה של speech synthesis בספארי
-        document.body.addEventListener('click', () => {
-            if (window.speechSynthesis.paused) {
-                window.speechSynthesis.resume();
-            }
-        });
     </script>
 </body>
 </html>
