@@ -3,10 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, orientation=landscape">
-    <title>Eye Gaze Tracking with Head Pose Estimation</title>
+    <title>Eye Gaze Tracking</title>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/opencv.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -53,57 +52,27 @@
             if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
                 const landmarks = results.multiFaceLandmarks[0];
 
-                // נקודות מפתח פנים (אף, עיניים, פה)
-                const noseTip = landmarks[1]; 
-                const chin = landmarks[152];
-                const leftEyeCorner = landmarks[33];
-                const rightEyeCorner = landmarks[263];
-                const mouthLeft = landmarks[61];
-                const mouthRight = landmarks[291];
+                // Example of landmark indices for eyes
+                const leftEye = landmarks[159]; // Example for left eye landmark
+                const rightEye = landmarks[386]; // Example for right eye landmark
 
-                // העברת נקודות אלו למודל 3D
-                const imagePoints = [
-                    [noseTip.x * window.innerWidth, noseTip.y * window.innerHeight],
-                    [chin.x * window.innerWidth, chin.y * window.innerHeight],
-                    [leftEyeCorner.x * window.innerWidth, leftEyeCorner.y * window.innerHeight],
-                    [rightEyeCorner.x * window.innerWidth, rightEyeCorner.y * window.innerHeight],
-                    [mouthLeft.x * window.innerWidth, mouthLeft.y * window.innerHeight],
-                    [mouthRight.x * window.innerWidth, mouthRight.y * window.innerHeight],
-                ];
+                // Convert landmarks to pixel coordinates
+                const leftEyeX = leftEye.x * window.innerWidth;
+                const leftEyeY = leftEye.y * window.innerHeight;
 
-                // מודל נקודות 3D (כפי שהוזכר במאמר)
-                const modelPoints = [
-                    [0.0, 0.0, 0.0],          // אף
-                    [0.0, -330.0, -65.0],      // סנטר
-                    [-225.0, 170.0, -135.0],   // עין שמאל
-                    [225.0, 170.0, -135.0],    // עין ימין
-                    [-150.0, -150.0, -125.0],  // פה שמאל
-                    [150.0, -150.0, -125.0]    // פה ימין
-                ];
+                const rightEyeX = rightEye.x * window.innerWidth;
+                const rightEyeY = rightEye.y * window.innerHeight;
 
-                // חישוב פתרון PnP
-                const focalLength = window.innerWidth;
-                const center = [window.innerWidth / 2, window.innerHeight / 2];
-                const cameraMatrix = [
-                    [focalLength, 0, center[0]],
-                    [0, focalLength, center[1]],
-                    [0, 0, 1]
-                ];
-                const distCoeffs = [0, 0, 0, 0];  // הנחה שאין עיוותים בעדשה
+                // Place the gaze dot at the middle of both eyes as an approximation
+                const gazeX = (leftEyeX + rightEyeX) / 2;
+                const gazeY = (leftEyeY + rightEyeY) / 2;
 
-                const success = cv.solvePnP(modelPoints, imagePoints, cameraMatrix, distCoeffs, rotationVector, translationVector);
+                // Log coordinates for testing
+                console.log(`GazeX: ${gazeX}, GazeY: ${gazeY}`);
 
-                if (success) {
-                    const projectedPoint = cv.projectPoints(
-                        [0, 0, 1000], rotationVector, translationVector, cameraMatrix, distCoeffs
-                    );
-
-                    const gazeX = projectedPoint[0].x;
-                    const gazeY = projectedPoint[0].y;
-
-                    gazeDot.style.left = `${gazeX}px`;
-                    gazeDot.style.top = `${gazeY}px`;
-                }
+                // Update the position of the gaze dot
+                gazeDot.style.left = `${gazeX - 7}px`;
+                gazeDot.style.top = `${gazeY - 7}px`;
             }
         });
 
