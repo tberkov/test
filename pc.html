@@ -30,22 +30,6 @@
             background-color: #F44336;
         }
 
-        /* Calibration point */
-        .calibration-point {
-            position: absolute;
-            width: 20px;
-            height: 20px;
-            background-color: red;
-            border-radius: 50%;
-            display: none;
-        }
-
-        /* Hide video feed from WebGazer */
-        #webgazerVideoFeed {
-            display: none !important;
-        }
-
-        /* Gaze dot חיווי מיקום המבט */
         #gazeDot {
             position: absolute;
             width: 15px;
@@ -63,17 +47,11 @@
 
     <div id="yesButton" class="focusButton" onclick="speak('Yes')">Yes</div>
     <div id="noButton" class="focusButton" onclick="speak('No')" style="background-color: #F44336;">No</div>
-
-    <!-- Calibration point -->
-    <div id="calibrationPoint" class="calibration-point"></div>
     
-    <!-- Gaze dot חיווי מיקום המבט -->
     <div id="gazeDot"></div>
 
     <script>
         let initialized = false;
-        let gazeDataBuffer = [];
-        const bufferSize = 20; // Buffer size for gaze smoothing
 
         // Function to trigger voice output
         function speak(text) {
@@ -82,20 +60,23 @@
             window.speechSynthesis.speak(msg);
         }
 
-        // Start the system with calibration and gaze tracking
+        // Initialize system and check camera access
         function initializeSystem() {
             if (!initialized) {
+                console.log("Initializing system...");
                 try {
-                    webgazer.setRegression('ridge')  // Set WebGazer to ridge regression
-                            .setTracker('clmtrackr')  // Use the CLM tracker
-                            .begin()  // Start WebGazer
-                            .showPredictionPoints(false);  // Hide the prediction points
+                    webgazer.setRegression('ridge')
+                            .setTracker('clmtrackr')
+                            .begin()
+                            .showPredictionPoints(true); // Show gaze prediction points for debugging
+                            
+                    console.log("WebGazer started.");
 
-                    console.log("WebGazer initialized.");
-                    requestCameraAccess(); // Request camera access from the user
+                    // Check if camera access works
+                    requestCameraAccess(); // Request camera permissions
                     initialized = true;
                     document.getElementById('startButton').style.display = 'none';
-                    startCalibration(); // Start calibration
+                    startCalibration(); // Start calibration process
                 } catch (error) {
                     console.error("Error initializing WebGazer:", error);
                     alert("Failed to initialize WebGazer. Please check camera permissions.");
@@ -103,7 +84,7 @@
             }
         }
 
-        // Request camera access and start WebGazer
+        // Request camera access
         function requestCameraAccess() {
             navigator.mediaDevices.getUserMedia({ video: true })
                 .then(function(stream) {
@@ -115,109 +96,24 @@
                 });
         }
 
-        // Calibration points for the user to follow
+        // Start simple calibration
         function startCalibration() {
-            const calibrationPoints = [
-                { x: window.innerWidth * 0.1, y: window.innerHeight * 0.1 },
-                { x: window.innerWidth * 0.9, y: window.innerHeight * 0.1 },
-                { x: window.innerWidth * 0.1, y: window.innerHeight * 0.9 },
-                { x: window.innerWidth * 0.9, y: window.innerHeight * 0.9 },
-                { x: window.innerWidth * 0.5, y: window.innerHeight * 0.5 }
-            ];
-
-            calibrationPoints.forEach((point, index) => {
-                setTimeout(() => {
-                    showCalibrationPoint(point.x, point.y);
-                }, index * 3000);
-            });
-
-            setTimeout(() => {
-                document.getElementById('yesButton').style.display = 'inline-block';
-                document.getElementById('noButton').style.display = 'inline-block';
-                document.getElementById('gazeDot').style.display = 'block'; // Show the gaze dot
-                startTracking(); // Begin tracking gaze after calibration
-            }, calibrationPoints.length * 3000);
+            console.log("Calibration started.");
+            document.getElementById('yesButton').style.display = 'inline-block';
+            document.getElementById('noButton').style.display = 'inline-block';
+            document.getElementById('gazeDot').style.display = 'block';
+            startTracking(); // Begin gaze tracking
         }
 
-        // Show the calibration point
-        function showCalibrationPoint(x, y) {
-            const point = document.getElementById('calibrationPoint');
-            point.style.left = `${x}px`;
-            point.style.top = `${y}px`;
-            point.style.display = 'block';
-
-            setTimeout(() => {
-                point.style.display = 'none';
-            }, 2000);
-        }
-
-        // Start gaze tracking after calibration
+        // Start tracking gaze
         function startTracking() {
-            webgazer.setGazeListener((data) => {
+            webgazer.setGazeListener((data, elapsedTime) => {
                 if (data == null) return;
-                addGazeData(data.x, data.y);
-
-                const averagedGaze = getAveragedGaze();
-                updateGazeDot(averagedGaze.x, averagedGaze.y);  // Update gaze dot location
-
-                checkFocus(averagedGaze.x, averagedGaze.y, 'yesButton', 'Yes');
-                checkFocus(averagedGaze.x, averagedGaze.y, 'noButton', 'No');
+                console.log(`Gaze Data: X=${data.x}, Y=${data.y}`);
+                const gazeDot = document.getElementById('gazeDot');
+                gazeDot.style.left = `${data.x - 7}px`;  // Center the dot
+                gazeDot.style.top = `${data.y - 7}px`;
             }).begin();
-        }
-
-        // Add gaze data to the buffer
-        function addGazeData(x, y) {
-            gazeDataBuffer.push({ x: x, y: y });
-            if (gazeDataBuffer.length > bufferSize) {
-                gazeDataBuffer.shift(); // Remove oldest data point
-            }
-        }
-
-        // Get the average gaze point
-        function getAveragedGaze() {
-            let sumX = 0;
-            let sumY = 0;
-            gazeDataBuffer.forEach(point => {
-                sumX += point.x;
-                sumY += point.y;
-            });
-            return {
-                x: sumX / gazeDataBuffer.length,
-                y: sumY / gazeDataBuffer.length
-            };
-        }
-
-        // Update the location of the gaze dot
-        function updateGazeDot(x, y) {
-            const gazeDot = document.getElementById('gazeDot');
-            gazeDot.style.left = `${x - 7}px`;  // Center the dot
-            gazeDot.style.top = `${y - 7}px`;
-        }
-
-        // Check if gaze is focused on a button for 0.5 seconds
-        function checkFocus(x, y, buttonId, speechText) {
-            const button = document.getElementById(buttonId);
-            const rect = button.getBoundingClientRect();
-            const padding = 30; // Increase padding for more lenient focus area
-
-            if (
-                x > rect.left - padding &&
-                x < rect.right + padding &&
-                y > rect.top - padding &&
-                y < rect.bottom + padding
-            ) {
-                if (!button.classList.contains('focused')) {
-                    button.classList.add('focused');
-                    button.focusTimer = setTimeout(() => {
-                        speak(speechText);
-                    }, 500); // 0.5 seconds of focus triggers speech
-                }
-            } else {
-                if (button.classList.contains('focused')) {
-                    button.classList.remove('focused');
-                    clearTimeout(button.focusTimer);
-                }
-            }
         }
     </script>
 </body>
