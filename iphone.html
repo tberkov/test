@@ -31,9 +31,10 @@
     <button id="yes-btn" class="button">כן</button>
     <button id="no-btn" class="button">לא</button>
 
-    <video id="cameraStream" width="1" height="1" autoplay style="display:none;"></video>
-
+    <script src="https://api.gazecloud.com/CloudEye.js"></script>
     <script>
+        let lastFocusedButton = ""; // משתנה לזכור את הכפתור הממוקד האחרון
+
         // פונקציה להשמעת פלט קולי
         function speak(text) {
             const utterance = new SpeechSynthesisUtterance(text);
@@ -41,44 +42,43 @@
             window.speechSynthesis.speak(utterance);
         }
 
-        // הפעלת מצלמה ושימוש ב-API של mediaDevices
-        function startCamera() {
-            const video = document.getElementById('cameraStream');
-            navigator.mediaDevices.getUserMedia({ video: true })
-                .then(function(stream) {
-                    video.srcObject = stream;
-                    console.log("המצלמה מופעלת בהצלחה.");
-                })
-                .catch(function(err) {
-                    console.error("שגיאה בגישה למצלמה: " + err);
-                    alert("לא ניתן לגשת למצלמה. אנא בדוק את ההרשאות.");
-                });
-        }
+        window.onload = function () {
+            // התחלת מעקב מבט
+            GazeCloudAPI.StartEyeTracking();
 
-        // פונקציה לדימוי מעקב מבט
-        function simulateGazeTracking() {
-            // כאן אפשר להוסיף אלגוריתם מעקב מבט, אבל לצורך הדוגמה נשתמש במעקב מבוסס טיימר
-            let lastFocusedButton = "";
+            GazeCloudAPI.OnGaze = function (GazeData) {
+                const x = GazeData.docX; // מיקום אופקי של המבט
+                const y = GazeData.docY; // מיקום אנכי של המבט
 
-            // מעקב מבוסס טיימר, בודק אחת לשנייה את הכפתורים
-            setInterval(function() {
-                // הגדרנו תנאי סימולציה שהמשתמש תמיד ממוקד בכפתור "כן"
+                // בדיקת מיקוד על הכפתור 'כן'
                 const yesBtn = document.getElementById('yes-btn');
                 const noBtn = document.getElementById('no-btn');
+                const yesBtnRect = yesBtn.getBoundingClientRect();
+                const noBtnRect = noBtn.getBoundingClientRect();
 
-                // סימולציה: נתמקד תמיד ב"כן"
-                if (lastFocusedButton !== "כן") {
+                if (x >= yesBtnRect.left && x <= yesBtnRect.right &&
+                    y >= yesBtnRect.top && y <= yesBtnRect.bottom) {
                     yesBtn.style.backgroundColor = 'green';
-                    noBtn.style.backgroundColor = 'lightcoral';
-                    speak("כן");
-                    lastFocusedButton = "כן";
+                    if (lastFocusedButton !== "כן") {
+                        speak("כן");
+                        lastFocusedButton = "כן";
+                    }
+                } else {
+                    yesBtn.style.backgroundColor = 'lightgreen';
                 }
-            }, 1000); // מרווח של 1 שנייה לבדיקת מיקוד
-        }
 
-        window.onload = function() {
-            startCamera(); // הפעלת מצלמה
-            simulateGazeTracking(); // הפעלת סימולציית מעקב מבט
+                // בדיקת מיקוד על הכפתור 'לא'
+                if (x >= noBtnRect.left && x <= noBtnRect.right &&
+                    y >= noBtnRect.top && y <= noBtnRect.bottom) {
+                    noBtn.style.backgroundColor = 'red';
+                    if (lastFocusedButton !== "לא") {
+                        speak("לא");
+                        lastFocusedButton = "לא";
+                    }
+                } else {
+                    noBtn.style.backgroundColor = 'lightcoral';
+                }
+            };
         };
 
         // ווידוא הפעלה של speech synthesis בספארי
