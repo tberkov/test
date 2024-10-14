@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>מיקוד מבט - כן ולא</title>
+    <title>מעקב מבט - כן ולא</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -30,16 +30,14 @@
     <button id="yes-btn" class="button">כן</button>
     <button id="no-btn" class="button">לא</button>
 
-    <script src="https://webgazer.cs.brown.edu/webgazer.js"></script>
+    <script src="https://api.gazecloud.com/CloudEye.js"></script>
     <script>
         window.onload = function () {
-            // התחלת מעקב המבט
-            webgazer.setGazeListener(function(data, elapsedTime) {
-                if (data == null) {
-                    return;
-                }
-                const x = data.x; // מיקום אופקי של המבט
-                const y = data.y; // מיקום אנכי של המבט
+            GazeCloudAPI.StartEyeTracking();
+
+            GazeCloudAPI.OnGaze = function (GazeData) {
+                const x = GazeData.docX; // מיקום אופקי של המבט
+                const y = GazeData.docY; // מיקום אנכי של המבט
 
                 // בדיקת מיקוד על הכפתור 'כן'
                 const yesBtn = document.getElementById('yes-btn');
@@ -61,7 +59,7 @@
                 } else {
                     noBtn.style.backgroundColor = 'lightcoral';
                 }
-            }).begin();
+            };
         };
     </script>
 </body>
