@@ -64,6 +64,13 @@
         function initializeSystem() {
             if (!initialized) {
                 console.log("Initializing system...");
+
+                // בדוק אם WebGazer נטען
+                if (typeof webgazer === "undefined") {
+                    alert("WebGazer failed to load. Please check the script source.");
+                    return;
+                }
+
                 try {
                     webgazer.setRegression('ridge')
                             .setTracker('clmtrackr')
