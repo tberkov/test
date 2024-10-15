@@ -83,9 +83,9 @@
         const yesButton = document.getElementById('yesButton');
         const noButton = document.getElementById('noButton');
 
-        let gazeFocus = ''; // עבור מעקב המיקוד
+        let gazeFocus = '';
         let focusStartTime = null;
-        const focusDuration = 1000; // משך זמן מיקוד באישון (במילישניות)
+        const focusDuration = 1000;
 
         async function startCamera() {
             try {
@@ -98,7 +98,6 @@
             }
         }
 
-        // יצירת אובייקט FaceMesh
         const faceMesh = new FaceMesh({
             locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`,
         });
@@ -113,13 +112,11 @@
         faceMesh.onResults((results) => {
             if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
                 const landmarks = results.multiFaceLandmarks[0];
-                const nose = landmarks[1]; // נקודת האף
+                const nose = landmarks[1]; 
 
-                // תנועה ישירה ומהירה של הסמן
                 const noseX = (1 - nose.x) * window.innerWidth;
                 const noseY = nose.y * window.innerHeight;
 
-                // עדכון מיקום הנקודה האדומה בהתאם למיקום האף
                 gazeDot.style.left = `${noseX - 7}px`;
                 gazeDot.style.top = `${noseY - 7}px`;
 
@@ -127,7 +124,6 @@
             }
         });
 
-        // פונקציה לבדיקה אם המשתמש ממוקד בכפתור מסוים
         function checkFocus(x, y) {
             if (isGazeOnButton(x, y, yesButton)) {
                 setFocus('yes');
@@ -138,13 +134,11 @@
             }
         }
 
-        // פונקציה שבודקת האם המבט ממוקד על כפתור מסוים
         function isGazeOnButton(gazeX, gazeY, button) {
             const rect = button.getBoundingClientRect();
             return gazeX >= rect.left && gazeX <= rect.right && gazeY >= rect.top && gazeY <= rect.bottom;
         }
 
-        // פונקציה להגדרת המיקוד בכפתור מסוים
         function setFocus(button) {
             if (gazeFocus !== button) {
                 gazeFocus = button;
@@ -158,13 +152,11 @@
             }
         }
 
-        // פונקציה לניקוי המיקוד
         function clearFocus() {
             gazeFocus = '';
             focusStartTime = null;
         }
 
-        // פונקציה להפעלת הכפתור (פלט קולי ולחיצה)
         function triggerButton(button) {
             if (button === 'yes') {
                 speak('כן');
@@ -173,14 +165,14 @@
             }
         }
 
-        // פונקציה לפלט קולי בעברית
         function speak(text) {
             const msg = new SpeechSynthesisUtterance(text);
-            msg.lang = 'he'; // עברית
+            msg.lang = 'he';
+            msg.pitch = 2.0; // שינוי גובה הקול כדי לדמות קול נשי של ילדה
+            msg.rate = 1.4;  // מהירות דיבור גבוהה יותר לדמות קול של ילדה
             window.speechSynthesis.speak(msg);
         }
 
-        // שימוש ב-Camera Utils כדי להפעיל את FaceMesh על כל פריים וידאו
         const camera = new Camera(videoElement, {
             onFrame: async () => {
                 await faceMesh.send({ image: videoElement });
@@ -192,7 +184,6 @@
         camera.start();
         startCamera();
 
-        // הוספת פלט קולי על ידי לחיצה
         yesButton.addEventListener('click', () => speak('כן'));
         noButton.addEventListener('click', () => speak('לא'));
     </script>
