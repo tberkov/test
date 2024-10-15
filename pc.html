@@ -91,18 +91,26 @@
                 ];
                 const distCoeffs = [0, 0, 0, 0];  // הנחה שאין עיוותים בעדשה
 
-                const success = cv.solvePnP(modelPoints, imagePoints, cameraMatrix, distCoeffs, rotationVector, translationVector);
+                let rotationVector = new cv.Mat();
+                let translationVector = new cv.Mat();
+                let success = cv.solvePnP(modelPoints, imagePoints, cameraMatrix, distCoeffs, rotationVector, translationVector);
 
                 if (success) {
-                    const projectedPoint = cv.projectPoints(
-                        [0, 0, 1000], rotationVector, translationVector, cameraMatrix, distCoeffs
-                    );
+                    console.log("Rotation Vector: ", rotationVector.data64F);
+                    console.log("Translation Vector: ", translationVector.data64F);
 
-                    const gazeX = projectedPoint[0].x;
-                    const gazeY = projectedPoint[0].y;
+                    const projectedPoint = new cv.Mat();
+                    cv.projectPoints(cv.matFromArray([0, 0, 1000], cv.CV_64F), rotationVector, translationVector, cameraMatrix, distCoeffs, projectedPoint);
+
+                    const gazeX = projectedPoint.data64F[0];
+                    const gazeY = projectedPoint.data64F[1];
+
+                    console.log(`Gaze X: ${gazeX}, Gaze Y: ${gazeY}`);
 
                     gazeDot.style.left = `${gazeX}px`;
                     gazeDot.style.top = `${gazeY}px`;
+                } else {
+                    console.error("PnP solution failed.");
                 }
             }
         });
