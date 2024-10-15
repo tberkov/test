@@ -2,199 +2,75 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, orientation=landscape">
-    <title>FaceMesh Nose Tracking with Buttons</title>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eye Gaze Tracking</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            padding: 0;
             margin: 0;
             overflow: hidden;
         }
-        #container {
-            position: relative;
-            width: 100vw;
+        .button-container {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
             height: 100vh;
         }
-        video {
-            position: absolute;
-            width: 160px; /* גודל קטן של חלון המצלמה */
-            height: 120px;
-            object-fit: cover;
-            top: 10px; /* מיקום המצלמה בחלק העליון */
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 0;
-            opacity: 0.6; /* שקיפות המצלמה */
+        button {
+            width: 100px;
+            height: 100px;
+            margin: 10px;
+            font-size: 24px;
         }
-        #gazeDot {
+        #yesButton {
+            background-color: green;
+            color: white;
+        }
+        #noButton {
+            background-color: red;
+            color: white;
+        }
+        #gaze-dot {
             position: absolute;
             width: 15px;
             height: 15px;
             background-color: red;
             border-radius: 50%;
-            z-index: 1;
         }
-        .button {
-            position: absolute;
-            width: 40vw; /* שימוש באחוזי רוחב כדי להתאים למסכים בתצוגה רוחבית */
-            height: 20vh; /* הגברת הגובה של הכפתורים לפי גובה המסך */
-            font-size: 5vw; /* גודל טקסט שיתאים לתצוגה רוחבית */
-            border: none;
-            cursor: pointer;
-            z-index: 1;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        #yesButton {
-            background-color: green;
-            color: white;
-            top: 30%; /* מיקום הכפתור הראשון */
-            left: 50%;
-            transform: translate(-50%, -50%);
-        }
-        #noButton {
-            background-color: red;
-            color: white;
-            top: 60%; /* מיקום הכפתור השני */
-            left: 50%;
-            transform: translate(-50%, -50%);
-        }
-        .button span {
-            margin-right: 10px;
+
+        /* Style for landscape orientation */
+        @media screen and (orientation: landscape) {
+            .button-container {
+                flex-direction: row-reverse; /* כפתורים מימין לשמאל */
+                justify-content: space-between;
+                width: 100vw;
+            }
         }
     </style>
 </head>
 <body>
-    <div id="container">
-        <video id="video" autoplay playsinline></video>
-        <div id="gazeDot"></div>
-        <button id="yesButton" class="button"><span>😊</span> כן</button>
-        <button id="noButton" class="button"><span>😡</span> לא</button>
+    <video id="video" autoplay playsinline style="display:none;"></video>
+    <div class="button-container">
+        <button id="yesButton">כן</button>
+        <button id="noButton">לא</button>
     </div>
+    <div id="gaze-dot"></div>
 
     <script>
-        const videoElement = document.getElementById('video');
-        const gazeDot = document.getElementById('gazeDot');
-        const yesButton = document.getElementById('yesButton');
-        const noButton = document.getElementById('noButton');
+        const gazeDot = document.getElementById('gaze-dot');
 
-        let gazeFocus = ''; // עבור מעקב המיקוד
-        let focusStartTime = null;
-        const focusDuration = 1000; // משך זמן מיקוד באישון (במילישניות)
-
-        async function startCamera() {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                videoElement.srcObject = stream;
-                console.log("Camera is running.");
-            } catch (error) {
-                console.error("Error accessing the camera:", error);
-                alert("Failed to access the camera. Please check permissions.");
-            }
+        // Example of how you can move the dot around
+        function moveGazeDot(x, y) {
+            gazeDot.style.left = `${x}px`;
+            gazeDot.style.top = `${y}px`;
         }
 
-        // יצירת אובייקט FaceMesh
-        const faceMesh = new FaceMesh({
-            locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`,
-        });
-
-        faceMesh.setOptions({
-            maxNumFaces: 1,
-            refineLandmarks: true,
-            minDetectionConfidence: 0.5,
-            minTrackingConfidence: 0.5,
-        });
-
-        faceMesh.onResults((results) => {
-            if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
-                const landmarks = results.multiFaceLandmarks[0];
-                const nose = landmarks[1]; // נקודת האף
-
-                // תנועה ישירה ומהירה של הסמן
-                const noseX = (1 - nose.x) * window.innerWidth;
-                const noseY = nose.y * window.innerHeight;
-
-                // עדכון מיקום הנקודה האדומה בהתאם למיקום האף
-                gazeDot.style.left = `${noseX - 7}px`;
-                gazeDot.style.top = `${noseY - 7}px`;
-
-                checkFocus(noseX, noseY);
-            }
-        });
-
-        // פונקציה לבדיקה אם המשתמש ממוקד בכפתור מסוים
-        function checkFocus(x, y) {
-            if (isGazeOnButton(x, y, yesButton)) {
-                setFocus('yes');
-            } else if (isGazeOnButton(x, y, noButton)) {
-                setFocus('no');
-            } else {
-                clearFocus();
-            }
-        }
-
-        // פונקציה שבודקת האם המבט ממוקד על כפתור מסוים
-        function isGazeOnButton(gazeX, gazeY, button) {
-            const rect = button.getBoundingClientRect();
-            return gazeX >= rect.left && gazeX <= rect.right && gazeY >= rect.top && gazeY <= rect.bottom;
-        }
-
-        // פונקציה להגדרת המיקוד בכפתור מסוים
-        function setFocus(button) {
-            if (gazeFocus !== button) {
-                gazeFocus = button;
-                focusStartTime = new Date().getTime();
-            } else {
-                const now = new Date().getTime();
-                if (now - focusStartTime >= focusDuration) {
-                    triggerButton(button);
-                    clearFocus();
-                }
-            }
-        }
-
-        // פונקציה לניקוי המיקוד
-        function clearFocus() {
-            gazeFocus = '';
-            focusStartTime = null;
-        }
-
-        // פונקציה להפעלת הכפתור (פלט קולי ולחיצה)
-        function triggerButton(button) {
-            if (button === 'yes') {
-                speak('כן');
-            } else if (button === 'no') {
-                speak('לא');
-            }
-        }
-
-        // פונקציה לפלט קולי בעברית
-        function speak(text) {
-            const msg = new SpeechSynthesisUtterance(text);
-            msg.lang = 'he'; // עברית
-            window.speechSynthesis.speak(msg);
-        }
-
-        // שימוש ב-Camera Utils כדי להפעיל את FaceMesh על כל פריים וידאו
-        const camera = new Camera(videoElement, {
-            onFrame: async () => {
-                await faceMesh.send({ image: videoElement });
-            },
-            width: window.innerWidth,
-            height: window.innerHeight
-        });
-
-        camera.start();
-        startCamera();
-
-        // הוספת פלט קולי על ידי לחיצה
-        yesButton.addEventListener('click', () => speak('כן'));
-        noButton.addEventListener('click', () => speak('לא'));
+        // Temporary example of moving the dot randomly
+        setInterval(() => {
+            const x = Math.random() * window.innerWidth;
+            const y = Math.random() * window.innerHeight;
+            moveGazeDot(x, y);
+        }, 1000);
     </script>
 </body>
 </html>
