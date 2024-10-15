@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Eye Gaze Tracking with TensorFlow.js</title>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/facemesh"></script>
+    <title>Eye Gaze Tracking with MediaPipe Iris</title>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
     <style>
         body {
             margin: 0;
@@ -24,71 +24,55 @@
     </style>
 </head>
 <body>
-    <video id="video" autoplay playsinline></video>
+    <video id="video" autoplay playsinline style="display:none;"></video>
     <div id="gaze-dot"></div>
 
     <script>
-        const video = document.getElementById('video');
+        const videoElement = document.getElementById('video');
         const gazeDot = document.getElementById('gaze-dot');
 
-        // Setup the video stream
-        async function setupCamera() {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-            video.srcObject = stream;
+        // Initialize MediaPipe FaceMesh with Iris tracking
+        const faceMesh = new FaceMesh({
+            locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`,
+        });
 
-            return new Promise((resolve) => {
-                video.onloadedmetadata = () => {
-                    resolve(video);
-                };
-            });
-        }
+        faceMesh.setOptions({
+            maxNumFaces: 1,
+            refineLandmarks: true, // Enables Iris tracking
+            minDetectionConfidence: 0.5,
+            minTrackingConfidence: 0.5,
+        });
 
-        // Load TensorFlow FaceMesh model
-        async function loadModel() {
-            const model = await facemesh.load();
-            console.log('FaceMesh model loaded');
-            return model;
-        }
+        faceMesh.onResults(onResults);
 
-        async function detectFace(model) {
-            const predictions = await model.estimateFaces(video);
+        // Function to handle results
+        function onResults(results) {
+            if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
+                const landmarks = results.multiFaceLandmarks[0];
 
-            if (predictions.length > 0) {
-                const keypoints = predictions[0].scaledMesh;
+                // Get the iris keypoints for both eyes
+                const leftIris = landmarks[468]; // Left iris
+                const rightIris = landmarks[473]; // Right iris
 
-                if (keypoints[468] && keypoints[473]) {
-                    const leftPupil = keypoints[468];
-                    const rightPupil = keypoints[473];
+                // Calculate average position of the irises
+                const avgIrisX = (leftIris.x + rightIris.x) / 2;
+                const avgIrisY = (leftIris.y + rightIris.y) / 2;
 
-                    console.log("Left Pupil:", leftPupil); // Log pupil coordinates
-                    console.log("Right Pupil:", rightPupil);
-
-                    // Calculate the average position of the pupils
-                    const avgPupilX = (leftPupil[0] + rightPupil[0]) / 2;
-                    const avgPupilY = (leftPupil[1] + rightPupil[1]) / 2;
-
-                    // Update gaze dot position based on pupil location
-                    gazeDot.style.left = `${avgPupilX - 7}px`;
-                    gazeDot.style.top = `${avgPupilY - 7}px`;
-                } else {
-                    console.log('Pupil keypoints not found.');
-                }
-            } else {
-                console.log('No face detected');
+                // Update gaze dot position based on iris location
+                gazeDot.style.left = `${avgIrisX * window.innerWidth - 7}px`;
+                gazeDot.style.top = `${avgIrisY * window.innerHeight - 7}px`;
             }
         }
 
-        // Main function to run the tracking
-        async function run() {
-            await setupCamera();
-            const model = await loadModel();
-            video.play();
-
-            // Continuously run face detection
-            setInterval(() => detectFace(model), 100);
-        }
-
-        run();
+        // Initialize camera
+        const camera = new Camera(videoElement, {
+            onFrame: async () => {
+                await faceMesh.send({ image: videoElement });
+            },
+            width: 640,
+            height: 480
+        });
+        camera.start();
     </script>
 </body>
 </html>
