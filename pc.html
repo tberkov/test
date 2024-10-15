@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Eye Gaze Direction Tracking with Three.js</title>
+    <title>Eye Gaze Calibration</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
@@ -15,12 +15,60 @@
         canvas {
             display: block;
         }
+        #calibration-dot {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background-color: blue;
+            border-radius: 50%;
+        }
+        #calibration-button {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            padding: 10px;
+            background-color: green;
+            color: white;
+            cursor: pointer;
+            display: none;
+        }
     </style>
 </head>
 <body>
     <video id="video" autoplay playsinline style="display:none;"></video>
+    <div id="calibration-dot"></div>
+    <div id="calibration-button">Click when focused</div>
 
     <script>
+        let calibrationStep = 0;
+        let calibrationData = [];
+        let isCalibrating = true;
+        const calibrationDot = document.getElementById('calibration-dot');
+        const calibrationButton = document.getElementById('calibration-button');
+        const calibrationPoints = [
+            { x: 0.1, y: 0.1 }, // Left top
+            { x: 0.9, y: 0.1 }, // Right top
+            { x: 0.5, y: 0.5 }, // Center
+            { x: 0.1, y: 0.9 }, // Left bottom
+            { x: 0.9, y: 0.9 }  // Right bottom
+        ];
+
+        function moveCalibrationDot() {
+            if (calibrationStep < calibrationPoints.length) {
+                const point = calibrationPoints[calibrationStep];
+                calibrationDot.style.left = `${point.x * window.innerWidth - 10}px`;
+                calibrationDot.style.top = `${point.y * window.innerHeight - 10}px`;
+                calibrationButton.style.display = 'block';
+            }
+        }
+
+        calibrationButton.addEventListener('click', () => {
+            calibrationButton.style.display = 'none'; // Hide button until next step
+            if (calibrationStep < calibrationPoints.length) {
+                isCalibrating = true;
+            }
+        });
+
         // Setup Three.js scene
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -28,15 +76,12 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
-        // Add gaze tracking dot
         const geometry = new THREE.SphereGeometry(0.05, 32, 32);
         const material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
         const gazeDot = new THREE.Mesh(geometry, material);
         scene.add(gazeDot);
 
         camera.position.z = 2;
-
-        let previousTimestamp = performance.now();
 
         // Load MediaPipe FaceMesh
         const faceMesh = new FaceMesh({
@@ -53,28 +98,41 @@
         faceMesh.onResults((results) => {
             if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
                 const landmarks = results.multiFaceLandmarks[0];
+                const leftPupil = landmarks[468];
+                const rightPupil = landmarks[473];
+                const noseTip = landmarks[1];
 
-                // Get important points: eyes and nose
-                const leftEye = landmarks[159];
-                const rightEye = landmarks[386];
-                const nose = landmarks[1]; // Nose tip
+                if (isCalibrating && calibrationStep < calibrationPoints.length) {
+                    calibrationData.push({
+                        leftPupil: { x: leftPupil.x, y: leftPupil.y },
+                        rightPupil: { x: rightPupil.x, y: rightPupil.y },
+                        noseTip: { x: noseTip.x, y: noseTip.y },
+                        calibrationPoint: calibrationPoints[calibrationStep]
+                    });
 
-                // Calculate average eye position and direction
-                const eyeMidX = (leftEye.x + rightEye.x) / 2;
-                const eyeMidY = (leftEye.y + rightEye.y) / 2;
+                    calibrationStep++;
+                    isCalibrating = false;
 
-                // Calculate the direction vector (eye center to nose)
-                const directionX = nose.x - eyeMidX;
-                const directionY = nose.y - eyeMidY;
+                    if (calibrationStep < calibrationPoints.length) {
+                        moveCalibrationDot();
+                    } else {
+                        calibrationDot.style.display = 'none';
+                    }
+                }
 
-                // Update gaze dot position based on direction
-                const scale = 5; // Scale factor for more noticeable movement
-                gazeDot.position.x = directionX * scale;
-                gazeDot.position.y = -directionY * scale; // Y-axis inverted
+                // Apply calibration for gaze direction
+                if (calibrationStep >= calibrationPoints.length) {
+                    const avgPupilX = (leftPupil.x + rightPupil.x) / 2;
+                    const avgPupilY = (leftPupil.y + rightPupil.y) / 2;
+                    const noseX = noseTip.x;
+
+                    const scale = 5;
+                    gazeDot.position.x = (avgPupilX - noseX) * scale;
+                    gazeDot.position.y = -(avgPupilY - noseTip.y) * scale;
+                }
             }
         });
 
-        // Start the camera and run the face mesh model on every frame
         const videoElement = document.getElementById('video');
         const cameraUtils = new Camera(videoElement, {
             onFrame: async () => {
@@ -86,12 +144,13 @@
 
         cameraUtils.start();
 
-        // Animate Three.js scene
         function animate() {
             requestAnimationFrame(animate);
             renderer.render(scene, camera);
         }
         animate();
+
+        moveCalibrationDot(); // Start calibration
     </script>
 </body>
 </html>
